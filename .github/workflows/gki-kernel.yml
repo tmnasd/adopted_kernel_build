@@ -195,7 +195,8 @@ jobs:
 
           echo "Replacing common kernel with Xiaomi Rodin source..."
           rm -rf common
-          git clone https://gitlab.com/bibi09456/kernel_xiaomi_rodin.git -b rodin-gpu common
+          #for perhaps faster building
+          git clone https://gitlab.com/bibi09456/kernel_xiaomi_rodin.git -b rodin-gpu common --depth 1
 
           FORMATTED_BRANCH="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
           if grep -q deprecated <<< "$REMOTE_BRANCH" && \
