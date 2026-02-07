@@ -582,7 +582,7 @@ jobs:
           fi
 
           echo "Replacing GKI with rodin defconfig..."
-          cp arch/arm64/configs/rodin_defconfig arch/arm64/configs/gki_defconfig
+          cp ./common/arch/arm64/configs/rodin_defconfig ./common/arch/arm64/configs/gki_defconfig
 
       - name: Build with retry
         uses: nick-fields/retry@v3
