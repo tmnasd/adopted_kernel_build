@@ -212,10 +212,9 @@ jobs:
           access-token: ${{ secrets.ACCESS_TOKEN }}
       - name: Replace ACK
         run: |
-          cd "$CONFIG"
           ls -a
-          rm -rf common
-          mv kernel_xiaomi_rodin common
+          rm -rf $CONFIG/common
+          mv kernel_xiaomi_rodin/ $CONFIG/common/
 
       - name: Enabling GKI to function properly on the OnePlus 8E platform
         if: ${{ inputs.supp_op }}
