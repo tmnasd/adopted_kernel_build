@@ -151,14 +151,14 @@ jobs:
         run: |
           clang --version
       
-      - name: 密钥设置——已经过mkppk修改
+      - name: Generate boot signing key
         env:
           BOOT_SIGN_KEY: ${{ secrets.BOOT_SIGN_KEY }}
         run: |
             openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
             echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
 
-      - name: 安装仓库
+      - name: Install repositories & dependencies
         run: |
           # Install dependencies
           mkdir -p ./git-repo
@@ -166,7 +166,7 @@ jobs:
           chmod a+rx ./git-repo/repo
           echo "REPO=$GITHUB_WORKSPACE/./git-repo/repo" >> $GITHUB_ENV
 
-      - name: 克隆 AnyKernel3 和其他依赖项
+      - name: Clone AnyKernel3 & Kernel patches
         run: |
           echo "Cloning AnyKernel3 and other dependencies..."
 
@@ -183,7 +183,7 @@ jobs:
           # Sukisu的补丁仓库
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
           
-      - name: 设置 CONFIG 环境变量
+      - name: Set CONFIG variable
         run: |
           # Set CONFIG dynamically based on inputs values
           CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}"
@@ -193,7 +193,7 @@ jobs:
 
           echo "CONFIG set to: $CONFIG"
 
-      - name: 初始化和同步内核源代码
+      - name: Synchronize android common kernel source
         run: |
           echo "Creating folder for configuration: $CONFIG..."
           mkdir -p "$CONFIG"
@@ -224,6 +224,9 @@ jobs:
             curl -LSs https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/legacy/fix_5.15.legacy -o fix_5.15.legacy.patch
             patch -p1 < fix_5.15.legacy.patch
           fi
+          ls -a
+          cd $CONFIG
+          ls -a
       - name: Clone rodin source
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         with:
@@ -316,7 +319,7 @@ jobs:
           
           echo "Baseband-guard 配置完成"
           
-      - name: 为 KernelSU 变体安装 SUSFS 补丁
+      - name: Apply SuSFS4KSU patches
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG"
@@ -446,7 +449,7 @@ jobs:
           patch -p1 -F 3 < lz4k_oplus.patch || true
           echo '完成lz4k_oplus补丁'
 
-      - name: 应用隐藏某特征的补丁
+      - name: Apply additional hiding patches
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG/common"
@@ -459,7 +462,7 @@ jobs:
             patch -p1 -F 3 < 69_hide_stuff.patch
           fi
 
-      - name: LZ4KD & Lz4k_oplus配置
+      - name: Configure LZ4KD & Lz4k_oplus
         if: ${{ inputs.use_zram }}
         run: |
           set -x
@@ -508,14 +511,14 @@ jobs:
             echo "CONFIG_ZRAM_WRITEBACK=y" >> "$CONFIG_FILE"
           fi
 
-      - name: 设置BBR为默认拥塞算法
+      - name: Set BBR as default compression algorithm
         if: ${{ inputs.set_defbbr }}
         run: |
           CONFIG_FILE="$CONFIG/common/arch/arm64/configs/rodin_defconfig"
           echo "Changing to configuration directory: $CONFIG_FILE..."
           echo "CONFIG_DEFAULT_BBR=y" >> "$CONFIG_FILE"
            
-      - name: 添加SUSFS配置设置
+      - name: Add SUSFS & KSU into defconfig
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG"
@@ -630,7 +633,7 @@ jobs:
             cd ..
             ls -a
 
-      - name: 修补 Image 文件 安卓14和安卓15(仅限sukisu)
+      - name: Add KPM patches
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
         run: |
           if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
@@ -643,7 +646,7 @@ jobs:
             mv oImage Image
             cd ../../..
           fi
-      - name: 上传编译资产
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}
