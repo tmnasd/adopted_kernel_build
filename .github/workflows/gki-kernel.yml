@@ -213,8 +213,9 @@ jobs:
       - name: Replace ACK
         run: |
           cd "$CONFIG"
+          ls -aR
           rm -rf common
-          mv kernel_xiaomi_rodin/ common/
+          mv kernel_xiaomi_rodin common
 
       - name: Enabling GKI to function properly on the OnePlus 8E platform
         if: ${{ inputs.supp_op }}
@@ -602,8 +603,11 @@ jobs:
           command: |
             set -e
             set -x
+            
             cd "$CONFIG/common"
             ./build_kernel.sh
+            cd ..
+            ls -aR
 
       - name: 修补 Image 文件 安卓14和安卓15(仅限sukisu)
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
