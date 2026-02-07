@@ -132,17 +132,17 @@ jobs:
       - name: Download and Install AOSP Clang
         run: |
           # Create a directory for Clang
-          mkdir -p ${{ github.workspace }}/clang-r487747c
+          mkdir -p ${{ github.workspace }}/clang-r510928
         
           # Download the tarball from the AOSP source
           # Using -L to follow redirects and -o to specify the output filename
-          curl -L https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android14-release/clang-r487747c.tar.gz -o clang.tar.gz
+          curl -L https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz -o clang.tar.gz
         
           # Extract the archive into the folder
-          tar -xzf clang.tar.gz -C ${{ github.workspace }}/clang-r487747c
+          tar -xzf clang.tar.gz -C ${{ github.workspace }}/clang-r510928
         
           # Add the Clang bin directory to GITHUB_PATH so it's available in subsequent steps
-          echo "${{ github.workspace }}/clang-r487747c/bin" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/clang-r510928/bin" >> $GITHUB_PATH
         
           # Clean up the tarball to save disk space
           rm clang.tar.gz
