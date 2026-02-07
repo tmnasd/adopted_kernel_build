@@ -213,7 +213,7 @@ jobs:
       - name: Replace ACK
         run: |
           cd "$CONFIG"
-          ls -aR
+          ls -a
           rm -rf common
           mv kernel_xiaomi_rodin common
 
@@ -607,7 +607,7 @@ jobs:
             cd "$CONFIG/common"
             ./build_kernel.sh
             cd ..
-            ls -aR
+            ls -a
 
       - name: 修补 Image 文件 安卓14和安卓15(仅限sukisu)
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
