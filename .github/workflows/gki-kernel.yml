@@ -146,6 +146,9 @@ jobs:
         
           # Clean up the tarball to save disk space
           rm clang.tar.gz
+          ls -a
+          cd toolchains
+          ls -a
 
       - name: Verify Clang Installation
         run: |
