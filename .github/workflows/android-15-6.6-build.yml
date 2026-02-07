@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       kernelsu_variant:
-        description: "选择 KernelSU"
+        description: "Kernel SU Variant"
         required: true
         type: choice
         options:
@@ -18,7 +18,7 @@ on:
           - SukiSU
         default: SukiSU
       kernelsu_branch:
-        description: "选择 ksu 分支"
+        description: "KSU Branch"
         required: true
         type: choice
         options:
@@ -27,31 +27,41 @@ on:
           - Other(其他/指定)
         default: Dev(开发)
       version:
-        description: '自定义版本名(如位于6.6.77-android15-8<自定义版本名>/留空则使用默认版本号)'
+        description: 'Custom version name (e.g., 6.6.77-android15-8 <custom version name> / leave blank to use the default version number)'
         required: false
         type: string
       use_zram:
-        description: '是否开启增加更多ZRAM算法?'
+        description: 'Add ZRAM'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: '是否开启KPM功能?'
+        description: 'Enable the KPM feature?'
         required: false
         type: boolean
         default: true
       supp_op:
-        description: '是否开启一加8E处理器机型支持?(非该机型无须勾)'
+        description: 'Enable support for OnePlus 8E processor models? (No need to check this box if your device is not this model)'
         required: false
         type: boolean
         default: false
       get_manager:
-        description: '是否同时获取最新KSU管理器?（实验性功能，报错请关闭）'
+        description: 'Get the latest KSU Manager? (Experimental feature, please disable if errors occur)'
         required: true
         type: boolean
         default: true
+      BBG:
+        description: "Enable kernel-level blocking of unauthorized writes to critical partitions/device nodes (LSM)？"
+        required: true
+        type: boolean
+        default: false
 jobs:
-
+ get-ksu-manager:
+    if: ${{ inputs.get_manager }}
+    uses: ./.github/workflows/get-manager.yml
+    secrets: inherit
+    with:
+      kernelsu_variant: ${{ inputs.kernelsu_variant }}
  build-kernel-a15-6-6:
     uses: ./.github/workflows/kernel-a15-6.6.yml
     secrets: inherit
@@ -63,9 +73,5 @@ jobs:
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
       supp_op: ${{ inputs.supp_op }}
- get-ksu-manager:
-    if: ${{ inputs.get_manager }}
-    uses: ./.github/workflows/get-manager.yml
-    secrets: inherit
-    with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
+      BBG: ${{ inputs.BBG }}
+ 
