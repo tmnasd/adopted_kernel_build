@@ -224,9 +224,6 @@ jobs:
             curl -LSs https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/legacy/fix_5.15.legacy -o fix_5.15.legacy.patch
             patch -p1 < fix_5.15.legacy.patch
           fi
-          ls -a
-          cd $CONFIG
-          ls -a
       - name: Clone rodin source
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         with:
