@@ -162,9 +162,7 @@ jobs:
             git clone https://github.com/Tools-cx-app/kernel_patches.git
           fi
           # Sukisu的补丁仓库
-          if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            git clone https://github.com/ShirkNeko/SukiSU_patch.git
-          fi
+          git clone https://github.com/ShirkNeko/SukiSU_patch.git
       - name: Set CONFIG variable
         run: |
           # Set CONFIG dynamically based on inputs values
