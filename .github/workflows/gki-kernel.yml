@@ -162,6 +162,7 @@ jobs:
             git clone https://github.com/WildKernels/kernel_patches.git
             KERNEL_PATCHES=$GITHUB_WORKSPACE/kernel_patches
             echo "KERNEL_PATCHES=$KERNEL_PATCHES" >> $GITHUB_ENV
+          fi
       - name: Set CONFIG variable
         run: |
           # Set CONFIG dynamically based on inputs values
