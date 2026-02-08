@@ -164,19 +164,22 @@ jobs:
 
           echo "CONFIG set to: $CONFIG"
       
-      - name: Clone capybara source & move to common/
-        #uses: GuillaumeFalourd/clone-github-repo-action@v2.3
-        #with:
-        #  depth: 1
-        #  branch: 'rodin-gpu'
-        #  owner: 'tmnasd'
-        #  repository: 'kernel_xiaomi_rodin'
-        #  access-token: ${{ secrets.ACCESS_TOKEN }}
+      - name: Clone rodin source
+        uses: GuillaumeFalourd/clone-github-repo-action@v2.3
+        with:
+          depth: 1
+          branch: 'rodin-gpu'
+          owner: 'tmnasd'
+          repository: 'kernel_xiaomi_rodin'
+          access-token: ${{ secrets.ACCESS_TOKEN }}
+        #run: |
+        #  cd "$CONFIG"
+        #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
+        #  mv capybara-aosp-gki common
+        #  ls -a
+      - name: Move to common
         run: |
-          cd "$CONFIG"
-          git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
-          mv capybara-aosp-gki common
-          ls -a
+          mv kernel_xiaomi_rodin $CONFIG/common
       - name: Enabling GKI to function properly on the OnePlus 8E platform
         if: ${{ inputs.supp_op }}
         run: |
@@ -233,7 +236,7 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
             echo "Manual clone from https://github.com/Small-cart/SukiSU-Ultra.git cuz official builtin messed up their patch"
-            git clone https://github.com/SukiSU-Ultra/SukiSU-Ultra.git -b builtin KernelSU
+            git clone https://github.com/Small-cart/SukiSU-Ultra.git -b builtin KernelSU
             cd KernelSU
             git checkout 4b8644515fe6d87a109129e590ccd9d33a855dca
             cd ..
@@ -530,8 +533,11 @@ jobs:
             
             cd "$CONFIG/common"
             ./build_kernel.sh
-            cd ..
-            ls -aR
+
+      - name: List all dirs
+        run: |
+          cd $CONFIG/out
+          ls -aR
 
       - name: Add KPM patches
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
