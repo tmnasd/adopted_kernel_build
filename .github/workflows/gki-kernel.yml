@@ -557,6 +557,6 @@ jobs:
         with:
           name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}
           path: |
-            *AnyKernel3.zip
-            *.img
-            Capybara*
+            ~/$CONFIG/common/*.zip
+            ~/$CONFIG/out/arch/arm64/boot/Image
+            ~/$CONFIG/out/arch/arm64/boot/Image.gz
