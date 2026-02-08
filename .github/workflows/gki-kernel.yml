@@ -530,8 +530,11 @@ jobs:
             
             cd "$CONFIG/common"
             ./build_kernel.sh
-            cd ..
-            ls -aR
+
+      - name: List all dirs
+        run: |
+          cd $CONFIG/out
+          ls -aR
 
       - name: Add KPM patches
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
