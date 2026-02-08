@@ -154,14 +154,16 @@ jobs:
           cd susfs4ksu
           git checkout f77334c982f9970958b856665c4d26ddf75e8248
           cd ..
-          git clone https://github.com/Tools-cx-app/kernel_patches.git
-          # Sukisu的补丁仓库
-          if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            git clone https://github.com/ShirkNeko/SukiSU_patch.git
-          elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
+          if [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             git clone https://github.com/WildKernels/kernel_patches.git
             KERNEL_PATCHES=$GITHUB_WORKSPACE/kernel_patches
             echo "KERNEL_PATCHES=$KERNEL_PATCHES" >> $GITHUB_ENV
+          else
+            git clone https://github.com/Tools-cx-app/kernel_patches.git
+          fi
+          # Sukisu的补丁仓库
+          if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
+            git clone https://github.com/ShirkNeko/SukiSU_patch.git
           fi
       - name: Set CONFIG variable
         run: |
