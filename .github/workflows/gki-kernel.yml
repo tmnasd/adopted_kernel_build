@@ -182,6 +182,7 @@ jobs:
           echo "Revert commits for stable use"
           cd susfs4ksu
           git checkout f77334c982f9970958b856665c4d26ddf75e8248
+          cd ..
           git clone https://github.com/Tools-cx-app/kernel_patches.git
           # Sukisu的补丁仓库
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
