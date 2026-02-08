@@ -224,6 +224,9 @@ jobs:
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG"
+          cd common
+          ls -a
+          cd ..
           if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "Adding KernelSU Official..."
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
@@ -241,7 +244,7 @@ jobs:
             git checkout 4b8644515fe6d87a109129e590ccd9d33a855dca
             cd ..
             echo "The remote script should now use the cloned KSU"
-            bash $CONFIG/common/add-ksu.sh $BRANCH
+            $CONFIG/common/add-ksu.sh $BRANCH
           fi
 
       - name: Add Baseband-guard support
