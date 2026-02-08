@@ -95,6 +95,10 @@ jobs:
           echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
           echo "MKBOOTIMG=$GITHUB_WORKSPACE/mkbootimg/mkbootimg.py" >> $GITHUB_ENV
           echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV
+          echo "ANYKERNEL3=$GITHUB_WORKSPACE/AnyKernel3" >> $GITHUB_ENV
+          mkdir -p $ANYKERNEL3
+          KERNEL_ROOT="$GITHUB_WORKSPACE/$CONFIG"
+          echo "KERNEL_ROOT=$KERNEL_ROOT" >> $GITHUB_ENV
 
       - name: Download and Install AOSP Clang
         run: |
@@ -534,9 +538,13 @@ jobs:
             cd "$CONFIG/common"
             ./build_kernel.sh
 
-      - name: List all dirs
+      - name: Move to Ak3 folder
         run: |
-          cd $CONFIG/out
+          cp $KERNEL_ROOT/out/arch/arm64/boot/Image $ANYKERNEL3/Image
+          cp $KERNEL_ROOT/out/arch/arm64/boot/Image.gz $ANYKERNEL3/Image.gz
+          cp $KERNEL_ROOT/common/*.zip $ANYKERNEL3/
+
+          cd $ANYKERNEL3
           ls -aR
 
       - name: Add KPM patches
@@ -556,7 +564,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}
-          path: |
-            ~/$CONFIG/common/*.zip
-            ~/$CONFIG/out/arch/arm64/boot/Image
-            ~/$CONFIG/out/arch/arm64/boot/Image.gz
+          path: ./AnyKernel3/**
