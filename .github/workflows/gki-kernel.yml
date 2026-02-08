@@ -156,8 +156,12 @@ jobs:
           cd ..
           git clone https://github.com/Tools-cx-app/kernel_patches.git
           # Sukisu的补丁仓库
-          git clone https://github.com/ShirkNeko/SukiSU_patch.git
-          
+          if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
+            git clone https://github.com/ShirkNeko/SukiSU_patch.git
+          elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
+            git clone https://github.com/WildKernels/kernel_patches.git
+            KERNEL_PATCHES=$GITHUB_WORKSPACE/kernel_patches
+            echo "KERNEL_PATCHES=$KERNEL_PATCHES" >> $GITHUB_ENV
       - name: Set CONFIG variable
         run: |
           # Set CONFIG dynamically based on inputs values
@@ -239,13 +243,10 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
-            echo "Manual clone from https://github.com/Small-cart/SukiSU-Ultra.git cuz official builtin messed up their patch"
-            git clone https://github.com/Small-cart/SukiSU-Ultra.git -b builtin KernelSU
-            cd KernelSU
-            git checkout 4b8644515fe6d87a109129e590ccd9d33a855dca
-            cd ..
-            echo "The remote script should now use the cloned KSU"
-            bash ./common/add-ksu.sh $BRANCH
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s 4b8644515fe6d87a109129e590ccd9d33a855dca
+          elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
+            echo "Adding Wild KSU..."
+            curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash -s 4bb3d70ccfbd41147c0f684c36fc9879bf7bb2e7
           fi
 
       - name: Add Baseband-guard support
@@ -310,8 +311,12 @@ jobs:
             patch -p1 < fix.patch || true
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Applying SUSFS patches for SukiSU..."
-             cd ./KernelSU
+            cd ./KernelSU
             echo "Applying SukiSU specific SUSFS patch..."
+          elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
+            echo "Applying SUSFS patches for WKSU..."
+            cp $KERNEL_PATCHES/wild/susfs_fix_patches/v2.0.0/a15-6.6/base.c.patch ./
+            patch -p1 < base.c.patch
           else
             echo "Invalid KernelSU variant selected!"
             exit 1
@@ -403,8 +408,8 @@ jobs:
           cd "$CONFIG/common"
           # Apply additional patch
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-          cp ../../SukiSU_patch/69_hide_stuff.patch ./
-          patch -p1 -F 3 < 69_hide_stuff.patch
+            cp ../../SukiSU_patch/69_hide_stuff.patch ./
+            patch -p1 -F 3 < 69_hide_stuff.patch
           else
             cp ../../kernel_patches/69_hide_stuff.patch ./
             patch -p1 -F 3 < 69_hide_stuff.patch
