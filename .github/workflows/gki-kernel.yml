@@ -196,6 +196,7 @@ jobs:
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
 
           echo "CONFIG set to: $CONFIG"
+      
       - name: Clone capybara source & move to common/
         #uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         #with:
@@ -208,7 +209,6 @@ jobs:
           git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1
           mkdir -p $CONFIG/common/
           mv capybara-aosp-gki/ $CONFIG/common/
-          ls -aR
       - name: Enabling GKI to function properly on the OnePlus 8E platform
         if: ${{ inputs.supp_op }}
         run: |
@@ -253,6 +253,10 @@ jobs:
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG"
+          ls -a
+          cd common
+          ls -a
+          cd ..
 
           if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "Adding KernelSU Official..."
