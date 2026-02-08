@@ -319,6 +319,7 @@ jobs:
             echo "Applying SukiSU specific SUSFS patch..."
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Applying SUSFS patches for WKSU..."
+            cd "$KERNEL_ROOT/common"
             cp $KERNEL_PATCHES/wild/susfs_fix_patches/v2.0.0/a15-6.6/base.c.patch ./
             patch -p1 < base.c.patch
           else
