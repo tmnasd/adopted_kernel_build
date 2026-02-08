@@ -206,6 +206,7 @@ jobs:
         #  access-token: ${{ secrets.ACCESS_TOKEN }}
         run: |
           git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1
+          mkdir -p $CONFIG/common/
           mv capybara-aosp-gki/ $CONFIG/common/
           ls -aR
       - name: Enabling GKI to function properly on the OnePlus 8E platform
