@@ -164,19 +164,22 @@ jobs:
 
           echo "CONFIG set to: $CONFIG"
       
-      - name: Clone capybara source & move to common/
-        #uses: GuillaumeFalourd/clone-github-repo-action@v2.3
-        #with:
-        #  depth: 1
-        #  branch: 'rodin-gpu'
-        #  owner: 'tmnasd'
-        #  repository: 'kernel_xiaomi_rodin'
-        #  access-token: ${{ secrets.ACCESS_TOKEN }}
+      - name: Clone rodin source
+        uses: GuillaumeFalourd/clone-github-repo-action@v2.3
+        with:
+          depth: 1
+          branch: 'rodin-gpu'
+          owner: 'tmnasd'
+          repository: 'kernel_xiaomi_rodin'
+          access-token: ${{ secrets.ACCESS_TOKEN }}
+        #run: |
+        #  cd "$CONFIG"
+        #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
+        #  mv capybara-aosp-gki common
+        #  ls -a
+      - name: Move to common
         run: |
-          cd "$CONFIG"
-          git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
-          mv capybara-aosp-gki common
-          ls -a
+          mv kernel_xiaomi_rodin $CONFIG/common
       - name: Enabling GKI to function properly on the OnePlus 8E platform
         if: ${{ inputs.supp_op }}
         run: |
