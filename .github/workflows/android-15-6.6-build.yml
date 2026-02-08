@@ -17,7 +17,7 @@ on:
           - MKSU
           - SukiSU
           - WKSU
-        default: SukiSU
+        default: WKSU
       kernelsu_branch:
         description: "KSU Branch"
         required: true
