@@ -80,6 +80,7 @@ jobs:
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
 
           echo "CONFIG set to: $CONFIG"
+          mkdir -p "$CONFIG"
 
       # Step 2: Download toolchain if cache was not found
       - name: Download the toolchain.
@@ -98,17 +99,17 @@ jobs:
       - name: Download and Install AOSP Clang
         run: |
           # Create a directory for Clang
-          mkdir -p ${{ github.workspace }}/toolchains/clang
+          mkdir -p $CONFIG/toolchains/clang
         
           # Download the tarball from the AOSP source
           # Using -L to follow redirects and -o to specify the output filename
           curl -L https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz -o clang.tar.gz
         
           # Extract the archive into the folder
-          tar -xzf clang.tar.gz -C ${{ github.workspace }}/toolchains/clang
+          tar -xzf clang.tar.gz -C $CONFIG/toolchains/clang
         
           # Add the Clang bin directory to GITHUB_PATH so it's available in subsequent steps
-          echo "${{ github.workspace }}/toolchains/clang/bin" >> $GITHUB_PATH
+          echo "$CONFIG/toolchains/clang/bin" >> $GITHUB_PATH
         
           # Clean up the tarball to save disk space
           rm clang.tar.gz
@@ -172,7 +173,6 @@ jobs:
         #  repository: 'kernel_xiaomi_rodin'
         #  access-token: ${{ secrets.ACCESS_TOKEN }}
         run: |
-          mkdir -p "$CONFIG"
           cd "$CONFIG"
           git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
           mv capybara-aosp-gki common
