@@ -241,7 +241,7 @@ jobs:
             git checkout 4b8644515fe6d87a109129e590ccd9d33a855dca
             cd ..
             echo "The remote script should now use the cloned KSU"
-            ./common/add-ksu.sh $BRANCH
+            bash ./common/add-ksu.sh $BRANCH
           fi
 
       - name: Add Baseband-guard support
