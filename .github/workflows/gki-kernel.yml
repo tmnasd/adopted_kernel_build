@@ -95,8 +95,8 @@ jobs:
           echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
           echo "MKBOOTIMG=$GITHUB_WORKSPACE/mkbootimg/mkbootimg.py" >> $GITHUB_ENV
           echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV
+          mkdir -p "$GITHUB_WORKSPACE/AnyKernel3"
           echo "ANYKERNEL3=$GITHUB_WORKSPACE/AnyKernel3" >> $GITHUB_ENV
-          mkdir -p $ANYKERNEL3
           KERNEL_ROOT="$GITHUB_WORKSPACE/$CONFIG"
           echo "KERNEL_ROOT=$KERNEL_ROOT" >> $GITHUB_ENV
 
