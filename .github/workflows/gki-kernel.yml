@@ -152,7 +152,7 @@ jobs:
           git clone -b "$SUSFS_BRANCH" --single-branch https://github.com/ShirkNeko/susfs4ksu.git
           echo "Revert commits for stable use"
           cd susfs4ksu
-          git checkout f77334c982f9970958b856665c4d26ddf75e8248
+          git checkout a0efc36191ded5c87506b1e9ec98e4ec6d24c9ac
           cd ..
           git clone https://github.com/Tools-cx-app/kernel_patches.git
           # Sukisu的补丁仓库
@@ -239,13 +239,14 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
-            echo "Manual clone from https://github.com/Small-cart/SukiSU-Ultra.git cuz official builtin messed up their patch"
-            git clone https://github.com/Small-cart/SukiSU-Ultra.git -b builtin KernelSU
-            cd KernelSU
-            git checkout 4b8644515fe6d87a109129e590ccd9d33a855dca
-            cd ..
-            echo "The remote script should now use the cloned KSU"
-            bash ./common/add-ksu.sh $BRANCH
+            #echo "Manual clone from https://github.com/Small-cart/SukiSU-Ultra.git cuz official builtin messed up their patch"
+            #git clone https://github.com/Small-cart/SukiSU-Ultra.git -b builtin KernelSU
+            #cd KernelSU
+            #git checkout 4b8644515fe6d87a109129e590ccd9d33a855dca
+            #cd ..
+            #echo "The remote script should now use the cloned KSU"
+            #bash ./common/add-ksu.sh $BRANCH
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s v4.1.0
           fi
 
       - name: Add Baseband-guard support
