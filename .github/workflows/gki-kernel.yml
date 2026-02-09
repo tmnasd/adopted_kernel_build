@@ -151,7 +151,7 @@ jobs:
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
           git clone -b "$SUSFS_BRANCH" --single-branch https://github.com/ShirkNeko/susfs4ksu.git
           cd susfs4ksu
-          git checkout 6a8c255f6271c430b1decc35e6148a01996aa493
+          git checkout a0efc36191ded5c87506b1e9ec98e4ec6d24c9ac
           cd ..
           
           if [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
