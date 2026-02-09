@@ -246,7 +246,7 @@ jobs:
             #cd ..
             #echo "The remote script should now use the cloned KSU"
             #bash ./common/add-ksu.sh $BRANCH
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s v4.1.0
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s 9f2752d99730d770cba34a854f4b9abbdda18fda
           fi
 
       - name: Add Baseband-guard support
