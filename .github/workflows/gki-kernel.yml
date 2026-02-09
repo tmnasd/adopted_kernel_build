@@ -152,7 +152,7 @@ jobs:
           git clone -b "$SUSFS_BRANCH" --single-branch https://github.com/ShirkNeko/susfs4ksu.git
           echo "Revert commits for stable use"
           cd susfs4ksu
-          git checkout f77334c982f9970958b856665c4d26ddf75e8248
+          git checkout 56b73631a064ed5c52f5b6da5872740765d0a307
           cd ..
           if [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             git clone https://github.com/WildKernels/kernel_patches.git
@@ -210,7 +210,12 @@ jobs:
           
           case "$branch_input" in
             "Stable(标准)")
-              echo "BRANCH=-s builtin" >> $GITHUB_ENV
+              if [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
+                echo "BRANCH=-s stable" >> $GITHUB_ENV
+
+              else
+                echo "BRANCH=-s builtin" >> $GITHUB_ENV
+              fi
               ;;
             "Dev(开发)")
               case "$variant_input" in
@@ -248,7 +253,7 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s 4b8644515fe6d87a109129e590ccd9d33a855dca
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Adding Wild KSU..."
-            curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash -s 4bb3d70ccfbd41147c0f684c36fc9879bf7bb2e7
+            curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash ${BRANCH}
           fi
 
       - name: Add Baseband-guard support
