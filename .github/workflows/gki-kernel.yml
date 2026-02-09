@@ -150,10 +150,6 @@ jobs:
           # Clone repositories using the branch names
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
           git clone -b "$SUSFS_BRANCH" --single-branch https://github.com/ShirkNeko/susfs4ksu.git
-          echo "Revert commits for stable use"
-          cd susfs4ksu
-          git checkout 56b73631a064ed5c52f5b6da5872740765d0a307
-          cd ..
           if [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             git clone https://github.com/WildKernels/kernel_patches.git
             KERNEL_PATCHES=$GITHUB_WORKSPACE/kernel_patches
