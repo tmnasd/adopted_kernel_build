@@ -53,6 +53,10 @@ on:
         required: true
         type: boolean
         default: false
+      nomount_support:
+        required: true
+        type: boolean
+        default: true
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-latest
@@ -389,7 +393,14 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Applying hooks for SukiSU..."
           fi
-
+      - name: Apply NoMount kernel patches
+        if: ${{ github.event.inputs.nomount_support == 'true' }}
+        run: |
+          cd "$CONFIG"
+          git clone https://github.com/maxsteeel/nomount.git
+          cp ./nomount/patches/nomount-susfs-kernel-6.6.patch ./common/
+          cd common
+          patch -p1 < nomount-susfs-kernel-6.6.patch
       - name: Copy the source file & apply LZ4KD & ZSTDN patches
         if: ${{ inputs.use_zram }}
         run: |
