@@ -23,14 +23,14 @@ on:
         required: true
         type: choice
         options:
-          - Stable(标准)
-          - Dev(开发)
-          - Other(其他/指定)
-        default: Dev(开发)
-      version:
-        description: 'Custom version name (e.g., 6.6.77-android15-8 <custom version name> / leave blank to use the default version number)'
+          - Stable
+          - Dev
+        default: Dev
+      kernelsu_custom_commit_hash:
+        description: "KSU commit hash to apply to kernel. Use latest if you want to get latest commit"
         required: false
         type: string
+        default: latest
       use_zram:
         description: 'Add ZRAM'
         required: true
@@ -41,11 +41,6 @@ on:
         required: false
         type: boolean
         default: true
-      supp_op:
-        description: 'Enable support for OnePlus 8E processor models? (No need to check this box if your device is not this model)'
-        required: false
-        type: boolean
-        default: false
       get_manager:
         description: 'Get the latest KSU Manager? (Experimental feature, please disable if errors occur)'
         required: true
@@ -56,6 +51,21 @@ on:
         required: true
         type: boolean
         default: false
+      custom_kernel_source:
+        description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
+        required: false
+        type: string
+        default: rodin
+      custom_susfs_commit_hash:
+        description: "Susfs4ksu custom commit hash. Use latest to get latest commit"
+        required: false
+        type: string
+        default: latest
+      clang_custom_link:
+        description: "Clang link you want to use to compile the kernel"
+        required: true
+        type: string
+        default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
 jobs:
  get-ksu-manager:
     if: ${{ inputs.get_manager }}
@@ -70,9 +80,11 @@ jobs:
       make_release: false
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      version: ${{ inputs.version }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
-      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG }}
+      clang_custom_link: ${{ inputs.clang_custom_link }}
+      kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash }}
+      custom_kernel_source: ${{ inputs.custom_kernel_source }}
+      custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash }}
  
