@@ -169,7 +169,7 @@ jobs:
           echo "CONFIG set to: $CONFIG"
       
       - name: Clone rodin source
-        if: ${{ '${{inputs.custom_kernel_source}}' == 'rodin' }}
+        if: ${{  inputs.custom_kernel_source == 'rodin'  }}
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         with:
           depth: 1
@@ -183,7 +183,7 @@ jobs:
         #  mv capybara-aosp-gki common
         #  ls -a
       - name: Clone custom source
-        if: ${{ '${{  inputs.custom_kernel_source  }}' != 'rodin'}}
+        if: ${{  inputs.custom_kernel_source != 'rodin'  }}
         run: |
           git clone ${{  inputs.custom_kernel_source  }} kernel_xiaomi_rodin
       - name: Move to common
