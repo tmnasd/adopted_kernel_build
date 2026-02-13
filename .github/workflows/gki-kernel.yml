@@ -146,7 +146,7 @@ jobs:
 
           # Clone repositories using the branch names
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
-          git clone -b "$SUSFS_BRANCH" --single-branch https://github.com/ShirkNeko/susfs4ksu.git
+          git clone -b "$SUSFS_BRANCH" --single-branch https://gitlab.com/simonpunk/susfs4ksu.git
           if [ "${{ inputs.custom_susfs_commit_hash }}" != "latest" ]; then
             cd susfs4ksu
             git checkout ${{ inputs.custom_susfs_commit_hash }}
