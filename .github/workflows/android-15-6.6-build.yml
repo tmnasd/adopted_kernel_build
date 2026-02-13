@@ -17,6 +17,7 @@ on:
           - MKSU
           - SukiSU
           - WKSU
+          - MamboSU
         default: WKSU
       kernelsu_branch:
         description: "KSU Branch"
