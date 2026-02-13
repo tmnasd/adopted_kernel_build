@@ -205,6 +205,7 @@ jobs:
                 "Official" | "MKSU") echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 "Next" | "WKSU)      echo "BRANCH=-s stable" >> $GITHUB_ENV ;;
                 "SukiSU")           echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "MamboSU")          echo "BRANCH=-s master" >> GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -216,6 +217,7 @@ jobs:
                 "Official" | "MKSU" | "Next") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
                 "SukiSU")                     echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
                 "WKSU")                       echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
+                "MamboSU")                    echo "BRANCH=-s susfs-mambo-master" >> GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -250,6 +252,9 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Adding Wild KSU..."
             curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
+            echo "Adding MamboSU..."
+            curl -LSs "https://raw.githubusercontent.com/RapliVx/KernelSU/refs/heads/master/kernel/setup.sh" | bash $BRANCH
           fi
 
       - name: Add Baseband-guard support
@@ -321,6 +326,8 @@ jobs:
             cd "$KERNEL_ROOT/common"
             cp $KERNEL_PATCHES/wild/susfs_fix_patches/v2.0.0/a15-6.6/base.c.patch ./
             patch -p1 < base.c.patch
+          elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
+            echo "Looks like MamboSU doesn't need any additional patches. Skipping for now..."
           else
             echo "Invalid KernelSU variant selected!"
             exit 1
