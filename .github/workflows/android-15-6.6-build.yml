@@ -51,6 +51,11 @@ on:
         required: true
         type: boolean
         default: false
+      nomount_support:
+        description: "Enable kernel-level systemless modification (NoMount) compability"
+        required: true
+        type: boolean
+        default: true
       custom_kernel_source:
         description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
         required: false
@@ -82,6 +87,7 @@ jobs:
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
       BBG: ${{ inputs.BBG }}
+      nomount_support: ${{ inputs.nomount_support }}
       clang_custom_link: ${{ inputs.clang_custom_link }}
       kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash }}
       custom_kernel_source: ${{ inputs.custom_kernel_source }}

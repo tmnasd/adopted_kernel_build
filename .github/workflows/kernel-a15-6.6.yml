@@ -23,20 +23,25 @@ on:
         type: string
         default: latest
       use_zram:
-        description: '是否开启增加更多ZRAM算法?'
+        description: 'Add ZRAM'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: '是否开启KPM功能?'
+        description: 'Enable KPM?'
         required: false
         type: boolean
         default: false
       BBG:
-        description: '是否启用内核层面阻止对关键分区/设备节点的非法写入(LSM)？'
+        description: 'Add BBG？'
         required: true
         type: boolean
         default: false
+      nomount_support:
+        description: 'Adds support for NoMount metamodule'
+        required: true
+        type: boolean
+        default: true
       custom_kernel_source:
         required: false
         type: string
@@ -91,5 +96,6 @@ jobs:
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
       BBG: ${{ inputs.BBG || false }}
+      nomount_support: ${{ inputs.nomount_support || false }}
       custom_kernel_source: ${{ inputs.custom_kernel_source || 'rodin' }}
       custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}

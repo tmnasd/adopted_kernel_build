@@ -45,6 +45,10 @@ on:
         required: true
         type: boolean
         default: false
+      nomount_support:
+        required: true
+        type: boolean
+        default: true
       custom_kernel_source:
         required: false
         type: string
@@ -240,10 +244,10 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash ${BRANCH}
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Adding Wild KSU..."
-            curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash ${BRANCH}
+            curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash $BRANCH
           fi
 
       - name: Add Baseband-guard support
@@ -379,7 +383,14 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Applying hooks for SukiSU..."
           fi
-
+      - name: Apply NoMount kernel patches
+        if: ${{ github.event.inputs.nomount_support == 'true' }}
+        run: |
+          cd "$CONFIG"
+          git clone https://github.com/maxsteeel/nomount.git
+          cp ./nomount/patches/nomount-susfs-kernel-6.6.patch ./common/
+          cd common
+          patch -p1 < nomount-susfs-kernel-6.6.patch
       - name: Copy the source file & apply LZ4KD & ZSTDN patches
         if: ${{ inputs.use_zram }}
         run: |
@@ -524,6 +535,9 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/rodin_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/rodin_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          if [ "${{ inputs.nomount_support }}" == "true" ]; then
+            echo "CONFIG_NOMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          fi
           
           # Remove check_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
