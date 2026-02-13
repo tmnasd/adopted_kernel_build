@@ -214,10 +214,11 @@ jobs:
               ;;
             "Dev")
               case "$variant_input" in
-                "Official" | "MKSU" | "Next") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
-                "SukiSU")                     echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
-                "WKSU")                       echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
-                "MamboSU")                    echo "BRANCH=-s susfs-mambo-master" >> GITHUB_ENV ;;
+                "Official" | "MKSU") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
+                "SukiSU")            echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
+                "WKSU")              echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
+                "MamboSU")           echo "BRANCH=-s susfs-mambo-master" >> GITHUB_ENV ;;
+                "Next")              echo "BRANCH=-s dev_susfs" >> $GITHUB_ENV  ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -328,6 +329,7 @@ jobs:
             patch -p1 < base.c.patch
           elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
             echo "Looks like MamboSU doesn't need any additional patches. Skipping for now..."
+            cd ./KernelSU
           else
             echo "Invalid KernelSU variant selected!"
             exit 1
