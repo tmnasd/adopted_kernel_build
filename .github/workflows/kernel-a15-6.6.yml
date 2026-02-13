@@ -6,10 +6,10 @@ permissions:
 on:
   workflow_call:  # This allows this workflow to be called from another workflow
     inputs:
-      make_release:
-        required: true
-        type: boolean
-        default: true
+      clang_custom_link:
+        required: false
+        type: string
+        default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
       kernelsu_variant:
         required: true
         type: string
@@ -18,27 +18,22 @@ on:
         required: true
         type: string
         default: Stable
-      version:
+      kernelsu_custom_commit_hash:
         required: false
         type: string
-        default: ""
+        default: latest
       use_zram:
-        description: '是否开启增加更多ZRAM算法?'
+        description: 'Add ZRAM'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: '是否开启KPM功能?'
-        required: false
-        type: boolean
-        default: false
-      supp_op:
-        description: '是否开启一加8E处理器机型支持?(非该机型无须勾)'
+        description: 'Enable KPM?'
         required: false
         type: boolean
         default: false
       BBG:
-        description: '是否启用内核层面阻止对关键分区/设备节点的非法写入(LSM)？'
+        description: 'Add BBG？'
         required: true
         type: boolean
         default: false
@@ -47,6 +42,15 @@ on:
         required: true
         type: boolean
         default: true
+      custom_kernel_source:
+        required: false
+        type: string
+        default: rodin
+      custom_susfs_commit_hash:
+        required: false
+        type: string
+        default: latest
+
 
 jobs:
   build-kernel-a15-6-6-kernelsu-susfs:
@@ -81,16 +85,17 @@ jobs:
     uses: ./.github/workflows/gki-kernel.yml
     secrets: inherit
     with:
-      make_release: ${{ inputs.make_release || false }}
+      clang_custom_link: ${{ inputs.clang_custom_link || 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz' }}
       android_version: "android15"
       kernel_version: "6.6"
       sub_level: ${{ matrix.sub_level }}
       os_patch_level: ${{ matrix.os_patch_level }}
       kernelsu_variant: ${{ inputs.kernelsu_variant || 'Next' }}
       kernelsu_branch: ${{ inputs.kernelsu_branch || 'Dev' }}
-      version: ${{ inputs.version || '' }}
+      kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash || 'latest' }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
-      supp_op: ${{ inputs.supp_op }}
       BBG: ${{ inputs.BBG || false }}
       nomount_support: ${{ inputs.nomount_support || false }}
+      custom_kernel_source: ${{ inputs.custom_kernel_source || 'rodin' }}
+      custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}
