@@ -10,10 +10,6 @@ on:
         required: false
         type: string
         default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
-      make_release:
-        required: true
-        type: boolean
-        default: true
       kernelsu_variant:
         required: true
         type: string
@@ -85,7 +81,6 @@ jobs:
     secrets: inherit
     with:
       clang_custom_link: ${{ inputs.clang_custom_link || 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz' }}
-      make_release: ${{ inputs.make_release || false }}
       android_version: "android15"
       kernel_version: "6.6"
       sub_level: ${{ matrix.sub_level }}
