@@ -9,7 +9,6 @@ on:
       clang_custom_link:
         required: false
         type: string
-        default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
       android_version:
         required: true
         type: string
@@ -31,7 +30,6 @@ on:
       kernelsu_custom_commit_hash:
         required: false
         type: string
-        default: latest
       # kernelsu_branch_other:
       #   required: false
       #   type: string
