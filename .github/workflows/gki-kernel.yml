@@ -6,10 +6,10 @@ permissions:
 on:
   workflow_call: # This allows this workflow to be called from another workflow
     inputs:
-      make_release:
-        required: true
-        type: boolean
-        default: true
+      clang_custom_link:
+        required: false
+        type: string
+        default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
       android_version:
         required: true
         type: string
@@ -28,15 +28,13 @@ on:
       kernelsu_branch:
         required: true
         type: string
+      kernelsu_custom_commit_hash:
+        required: false
+        type: string
+        default: latest
       # kernelsu_branch_other:
       #   required: false
       #   type: string
-      revision:
-        required: false
-        type: string
-      version:
-        required: false
-        type: string
       use_zram:
         required: true
         type: boolean
@@ -44,15 +42,19 @@ on:
       use_kpm:
         required: true
         type: boolean
-        default: true
-      supp_op:
-        required: true
-        type: boolean
         default: false
       BBG:
         required: true
         type: boolean
         default: false
+      custom_kernel_source:
+        required: false
+        type: string
+        default: rodin
+      custom_susfs_commit_hash:
+        required: false
+        type: string
+        default: latest
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-latest
@@ -107,7 +109,7 @@ jobs:
         
           # Download the tarball from the AOSP source
           # Using -L to follow redirects and -o to specify the output filename
-          curl -L https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz -o clang.tar.gz
+          curl -L ${{ inputs.clang_custom_link }} -o clang.tar.gz
         
           # Extract the archive into the folder
           tar -xzf clang.tar.gz -C $CONFIG/toolchains/clang
@@ -122,13 +124,6 @@ jobs:
         run: |
           clang --version
       
-      - name: Generate boot signing key
-        env:
-          BOOT_SIGN_KEY: ${{ secrets.BOOT_SIGN_KEY }}
-        run: |
-            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
-            echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
-
       - name: Install repositories & dependencies
         run: |
           # Install dependencies
@@ -150,9 +145,11 @@ jobs:
           # Clone repositories using the branch names
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
           git clone -b "$SUSFS_BRANCH" --single-branch https://github.com/ShirkNeko/susfs4ksu.git
-          cd susfs4ksu
-          git checkout f55d86eb9780844bc5ab2d6314b2d3654a07ca74
-          cd ..
+          if [ "${{ inputs.custom_susfs_commit_hash }}" != "latest" ]; then
+            cd susfs4ksu
+            git checkout ${{ inputs.custom_susfs_commit_hash }}
+            cd ..
+          fi
           
           if [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             git clone https://github.com/WildKernels/kernel_patches.git
@@ -174,6 +171,7 @@ jobs:
           echo "CONFIG set to: $CONFIG"
       
       - name: Clone rodin source
+        if: ${{ '${{inputs.custom_kernel_source}}' == 'rodin' }}
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         with:
           depth: 1
@@ -186,22 +184,13 @@ jobs:
         #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
         #  mv capybara-aosp-gki common
         #  ls -a
+      - name: Clone custom source
+        if: ${{ '${{  inputs.custom_kernel_source  }}' != 'rodin'}}
+        run: |
+          git clone ${{  inputs.custom_kernel_source  }} kernel_xiaomi_rodin
       - name: Move to common
         run: |
           mv kernel_xiaomi_rodin $CONFIG/common
-      - name: Enabling GKI to function properly on the OnePlus 8E platform
-        if: ${{ inputs.supp_op }}
-        run: |
-          echo '切换到驱动目录'
-          cd "$CONFIG/common/drivers/"
-          echo '当前目录$(pwd),下载支持补丁'
-          curl -LSs "https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/dev/hmbird_patch.c" -o hmbird_patch.c
-          if [ ! -f hmbird_patch.c ]; then
-            echo "hmbird_patch.c 下载失败"
-          fi
-          echo '补丁加入构建'
-          echo "obj-y += hmbird_patch.o" >> Makefile
-          tail -n 3 Makefile
       
       - name: Determine the branch of KernelSU
         run: |
@@ -234,6 +223,9 @@ jobs:
               exit 1
               ;;
           esac
+          if [ "${{ inputs.kernelsu_custom_commit_hash }}" != "latest" ]; then
+            echo "BRANCH=-s ${{ inputs.kernelsu_custom_commit_hash }}" >> $GITHUB_ENV
+          fi
 
       - name: Add KernelSU
         run: |
@@ -250,7 +242,7 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s 4b8644515fe6d87a109129e590ccd9d33a855dca
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash ${BRANCH}
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Adding Wild KSU..."
             curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash ${BRANCH}
