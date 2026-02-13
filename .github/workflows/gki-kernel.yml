@@ -474,13 +474,6 @@ jobs:
             echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
             echo "CONFIG_ZRAM_WRITEBACK=y" >> "$CONFIG_FILE"
           fi
-
-      - name: Set BBR as default compression algorithm
-        if: ${{ inputs.set_defbbr }}
-        run: |
-          CONFIG_FILE="$CONFIG/common/arch/arm64/configs/rodin_defconfig"
-          echo "Changing to configuration directory: $CONFIG_FILE..."
-          echo "CONFIG_DEFAULT_BBR=y" >> "$CONFIG_FILE"
            
       - name: Add SUSFS & KSU into defconfig
         run: |
@@ -565,6 +558,7 @@ jobs:
 
           cd $ANYKERNEL3
           ls -aR
+          echo "TIME=$(date "+%Y%m%d-%H%M%S")" >> $GITHUB_ENV
 
       - name: Add KPM patches
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
@@ -582,5 +576,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}
+          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}-${{ env.TIME }}
           path: ./AnyKernel3/**
