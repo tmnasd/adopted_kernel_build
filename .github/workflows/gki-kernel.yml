@@ -557,7 +557,11 @@ jobs:
             set -x
             
             cd "$CONFIG/common"
-            ./build_kernel.sh
+            if [ "${{ inputs.nomount_support }}" == "true" ]; then
+              ./build_kernel.sh ${{ inputs.kernelsu_variant }}-sfs-nomount
+            else
+              ./build_kernel.sh ${{ inputs.kernelsu_variant }}-sfs
+            fi
 
       - name: Move to Ak3 folder
         run: |
