@@ -203,8 +203,9 @@ jobs:
             "Stable")
               case "$variant_input" in
                 "Official" | "MKSU") echo "BRANCH=-s main" >> $GITHUB_ENV ;;
-                "Next" | "WKSU)      echo "BRANCH=-s stable" >> $GITHUB_ENV ;;
+                "Next" | "WKSU")      echo "BRANCH=-s stable" >> $GITHUB_ENV ;;
                 "SukiSU")           echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "MamboSU")          echo "BRANCH=-s master" >> $GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -213,9 +214,11 @@ jobs:
               ;;
             "Dev")
               case "$variant_input" in
-                "Official" | "MKSU" | "Next") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
-                "SukiSU")                     echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
-                "WKSU")                       echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
+                "Official" | "MKSU") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
+                "SukiSU")            echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
+                "WKSU")              echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
+                "MamboSU")           echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
+                "Next")              echo "BRANCH=-s dev_susfs" >> $GITHUB_ENV  ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -250,6 +253,9 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Adding Wild KSU..."
             curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
+            echo "Adding MamboSU..."
+            curl -LSs "https://raw.githubusercontent.com/RapliVx/KernelSU/refs/heads/master/kernel/setup.sh" | bash $BRANCH
           fi
 
       - name: Add Baseband-guard support
@@ -318,9 +324,10 @@ jobs:
             echo "Applying SukiSU specific SUSFS patch..."
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Applying SUSFS patches for WKSU..."
-            cd "$KERNEL_ROOT/common"
-            cp $KERNEL_PATCHES/wild/susfs_fix_patches/v2.0.0/a15-6.6/base.c.patch ./
-            patch -p1 < base.c.patch
+            cd ./Wild_KSU
+          elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
+            echo "Looks like MamboSU doesn't need any additional patches. Skipping for now..."
+            cd ./KernelSU
           else
             echo "Invalid KernelSU variant selected!"
             exit 1
@@ -548,7 +555,11 @@ jobs:
             set -x
             
             cd "$CONFIG/common"
-            ./build_kernel.sh
+            if [ "${{ inputs.nomount_support }}" == "true" ]; then
+              ./build_kernel.sh ${{ inputs.kernelsu_variant }}-sfs-nomount
+            else
+              ./build_kernel.sh ${{ inputs.kernelsu_variant }}-sfs
+            fi
 
       - name: Move to Ak3 folder
         run: |
