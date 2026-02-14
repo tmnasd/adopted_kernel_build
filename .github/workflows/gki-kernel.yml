@@ -153,13 +153,9 @@ jobs:
             cd ..
           fi
           
-          if [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
-            git clone https://github.com/WildKernels/kernel_patches.git
-            KERNEL_PATCHES=$GITHUB_WORKSPACE/kernel_patches
-            echo "KERNEL_PATCHES=$KERNEL_PATCHES" >> $GITHUB_ENV
-          else
-            git clone https://github.com/Tools-cx-app/kernel_patches.git
-          fi
+          git clone https://github.com/WildKernels/kernel_patches.git
+          KERNEL_PATCHES=$GITHUB_WORKSPACE/kernel_patches
+          echo "KERNEL_PATCHES=$KERNEL_PATCHES" >> $GITHUB_ENV
           # Sukisu的补丁仓库
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
       - name: Set CONFIG variable
@@ -392,6 +388,11 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Applying hooks for SukiSU..."
           fi
+      - name: Zero-width character fix
+        run: |
+          cp ./kernel_patches/common/unicode_bypass_fix_6.1+.patch ./$CONFIG/common/
+          cd "$CONFIG/common"
+          patch -p1 < unicode_bypass_fix_6.1+.patch
       - name: Apply NoMount kernel patches
         if: ${{ github.event.inputs.nomount_support == 'true' }}
         run: |
