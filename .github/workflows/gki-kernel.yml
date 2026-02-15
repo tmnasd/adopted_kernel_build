@@ -596,6 +596,7 @@ jobs:
 
             echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
             ./build_kernel.sh $ARGS
+            echo "TIME=$(date "+%Y%m%d-%H%M%S")" >> $GITHUB_ENV
 
       - name: Add KPM patches
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
