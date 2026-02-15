@@ -54,6 +54,10 @@ on:
         required: false
         type: boolean
         default: true
+      use_ccache:
+        required: false
+        type: boolean
+        default: true
 
 
 jobs:
@@ -104,3 +108,4 @@ jobs:
       custom_kernel_source: ${{ inputs.custom_kernel_source || 'rodin' }}
       custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}
       apply_hide_stuff: ${{ inputs.apply_hide_stuff  }}
+      use_ccache: ${{ inputs.use_ccache }}
