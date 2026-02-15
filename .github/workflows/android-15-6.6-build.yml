@@ -57,6 +57,11 @@ on:
         required: true
         type: boolean
         default: true
+      apply_hide_stuff:
+        description: "Apply additional hiding patches (see WildKernels/kernel_patches for more info). Disable this if you're having compilation issues"
+        required: false
+        type: boolean
+        default: true
       custom_kernel_source:
         description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
         required: false
@@ -93,4 +98,5 @@ jobs:
       kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash }}
       custom_kernel_source: ${{ inputs.custom_kernel_source }}
       custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash }}
+      apply_hide_stuff: ${{ inputs.apply_hide_stuff }}
  
