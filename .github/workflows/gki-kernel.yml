@@ -591,14 +591,14 @@ jobs:
             set -e
             set -x
 
-            $ARGS = "${{ inputs.kernelsu_variant }}-susfs"
+            ARGS = "${{ inputs.kernelsu_variant }}-susfs"
             
             cd "$CONFIG/common"
             if [ "${{ inputs.nomount_support }}" == "true" ]; then
-              $ARGS+="-nomount"
+              ARGS+="-nomount"
             fi
-            $ARGS+=" "
-            $ARGS+="${{ inputs.use_ccache }}"
+            ARGS+=" "
+            ARGS+="${{ inputs.use_ccache }}"
             ./build_kernel.sh $ARGS
 
       - name: Move to Ak3 folder
