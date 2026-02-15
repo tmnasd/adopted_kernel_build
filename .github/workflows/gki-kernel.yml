@@ -436,7 +436,7 @@ jobs:
           git clone https://github.com/maxsteeel/nomount.git
           cp ./nomount/patches/nomount-susfs-kernel-6.6.patch ./common/
           cd common
-          patch -p1 < nomount-susfs-kernel-6.6.patch
+          patch -p1 --fuzz=10 < nomount-susfs-kernel-6.6.patch
       - name: Copy the source file & apply LZ4KD & ZSTDN patches
         if: ${{ inputs.use_zram }}
         run: |
