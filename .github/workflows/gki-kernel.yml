@@ -209,7 +209,7 @@ jobs:
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         with:
           depth: 1
-          branch: 'rodin-gpu'
+          branch: 'test'
           owner: 'tmnasd'
           repository: 'kernel_xiaomi_rodin'
           access-token: ${{ secrets.ACCESS_TOKEN }}
@@ -225,6 +225,8 @@ jobs:
       - name: Move to common
         run: |
           mv kernel_xiaomi_rodin $CONFIG/common
+          cd "$CONFIG/common"
+          ls -a
       
       - name: Determine the branch of KernelSU
         run: |
