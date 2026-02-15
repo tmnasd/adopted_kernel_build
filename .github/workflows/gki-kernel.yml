@@ -209,7 +209,7 @@ jobs:
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         with:
           depth: 1
-          branch: 'rodin-gpu'
+          branch: 'new-rod-gpu'
           owner: 'tmnasd'
           repository: 'kernel_xiaomi_rodin'
           access-token: ${{ secrets.ACCESS_TOKEN }}
