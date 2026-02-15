@@ -591,14 +591,7 @@ jobs:
             set -e
             set -x
 
-            ARGS = "${{ inputs.kernelsu_variant }}-susfs"
-            
-            cd "$CONFIG/common"
-            if [ "${{ inputs.nomount_support }}" == "true" ]; then
-              ARGS+="-nomount"
-            fi
-            ARGS+=" "
-            ARGS+="${{ inputs.use_ccache }}"
+            echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
             ./build_kernel.sh $ARGS
 
       - name: Move to Ak3 folder
