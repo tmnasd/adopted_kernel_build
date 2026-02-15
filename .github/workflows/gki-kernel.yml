@@ -295,21 +295,20 @@ jobs:
       - name: Add Baseband-guard support
         if: ${{ github.event.inputs.BBG == 'true' }}
         run: |
-          echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG/common"
           
-          echo "下载并运行 Baseband-guard setup 脚本..."
+          echo "Setting up Baseband-Guard"
           wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
           
-          echo "启用 Baseband-guard 内核配置..."
+          echo "Enable Baseband-Guard in defconfig"
           CONFIG_FILE="arch/arm64/configs/rodin_defconfig"
           echo "CONFIG_BBG=y" >> "$CONFIG_FILE"
           
           # 对于 GitHub Actions 云编译，修改 LSM Kconfig
           echo "Modify security/Kconfig to include baseband_guard..."
-          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./security/Kconfig
+          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
           
-          echo "Baseband-guard 配置完成"
+          echo "Setup completed"
           
       - name: Apply SuSFS4KSU patches
         run: |
