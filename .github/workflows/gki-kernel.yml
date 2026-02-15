@@ -107,8 +107,16 @@ jobs:
           echo "ANYKERNEL3=$GITHUB_WORKSPACE/AnyKernel3" >> $GITHUB_ENV
           KERNEL_ROOT="$GITHUB_WORKSPACE/$CONFIG"
           echo "KERNEL_ROOT=$KERNEL_ROOT" >> $GITHUB_ENV
-
+      - name: Generate Toolchain Key
+        run: echo "${{ github.event.inputs.clang_custom_link }}" > clang_url.txt
+      - name: Cache AOSP Clang
+        id: cache-clang
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}/toolchains/clang  # The directory where you install clang
+          key: clang-${{ hashFiles('clang_url.txt') }}
       - name: Download and Install AOSP Clang
+        if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
           # Create a directory for Clang
           mkdir -p $CONFIG/toolchains/clang
