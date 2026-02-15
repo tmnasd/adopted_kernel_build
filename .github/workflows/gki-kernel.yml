@@ -597,16 +597,6 @@ jobs:
             echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
             ./build_kernel.sh $ARGS
 
-      - name: Move to Ak3 folder
-        run: |
-          cp $KERNEL_ROOT/out/arch/arm64/boot/Image $ANYKERNEL3/Image
-          cp $KERNEL_ROOT/out/arch/arm64/boot/Image.gz $ANYKERNEL3/Image.gz
-          cp $KERNEL_ROOT/common/*.zip $ANYKERNEL3/
-
-          cd $ANYKERNEL3
-          ls -aR
-          echo "TIME=$(date "+%Y%m%d-%H%M%S")" >> $GITHUB_ENV
-
       - name: Add KPM patches
         if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
         run: |
@@ -624,4 +614,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}-${{ env.TIME }}
-          path: ./AnyKernel3/**
+          path: | 
+            **/*.zip
+            **/Image
+            **/Image.gz
