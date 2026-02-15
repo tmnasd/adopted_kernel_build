@@ -130,7 +130,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}/toolchains/clang  # The directory where you install clang
           key: clang-${{ hashFiles('clang_url.txt') }}
-      - name: Download and Install AOSP Clang
+      - name: Download AOSP Clang
         if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
           # Create a directory for Clang
@@ -143,11 +143,10 @@ jobs:
           # Extract the archive into the folder
           tar -xzf clang.tar.gz -C $CONFIG/toolchains/clang
         
-          # Add the Clang bin directory to GITHUB_PATH so it's available in subsequent steps
-          echo "$CONFIG/toolchains/clang/bin" >> $GITHUB_PATH
-        
           # Clean up the tarball to save disk space
           rm clang.tar.gz
+      - name: Install AOSP Clang
+        run: echo "$CONFIG/toolchains/clang/bin" >> $GITHUB_PATH
 
       - name: Verify Clang Installation
         run: |
