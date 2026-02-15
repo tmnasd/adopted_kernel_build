@@ -383,8 +383,8 @@ jobs:
 
           if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             echo "Applying hooks for KernelSU-Next..."
-            cp ../../kernel_patches/next/scope_min_manual_hooks_v1.4.patch ./
-            patch -p1 -F 3 < scope_min_manual_hooks_v1.4.patch
+            cp ../../kernel_patches/next/scope_min_manual_hooks_v1.6.patch ./
+            patch -p1 -F 3 < scope_min_manual_hooks_v1.6.patch
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Applying hooks for SukiSU..."
           fi
@@ -433,7 +433,8 @@ jobs:
             cp ../../kernel_patches/69_hide_stuff.patch ./
             patch -p1 -F 3 < 69_hide_stuff.patch
           fi
-
+          echo "Print task_mmu.c to debug"
+          cat ./fs/proc/task_mmu.c
       - name: Configure LZ4KD & Lz4k_oplus
         if: ${{ inputs.use_zram }}
         run: |
