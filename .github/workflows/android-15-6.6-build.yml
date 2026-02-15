@@ -42,11 +42,6 @@ on:
         required: false
         type: boolean
         default: true
-      get_manager:
-        description: 'Get the latest KSU Manager? (Experimental feature, please disable if errors occur)'
-        required: true
-        type: boolean
-        default: true
       BBG:
         description: "Enable kernel-level blocking of unauthorized writes to critical partitions/device nodes (LSM)？"
         required: true
@@ -59,6 +54,11 @@ on:
         default: true
       apply_hide_stuff:
         description: "Apply additional hiding patches (see WildKernels/kernel_patches for more info). Disable this if you're having compilation issues"
+        required: false
+        type: boolean
+        default: true
+      use_ccache:
+        description: "Use CCache to cache the compilation result. This helps speed up later compile session, but requires a supported build script"
         required: false
         type: boolean
         default: true
@@ -78,12 +78,6 @@ on:
         type: string
         default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
 jobs:
- get-ksu-manager:
-    if: ${{ inputs.get_manager }}
-    uses: ./.github/workflows/get-manager.yml
-    secrets: inherit
-    with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
  build-kernel-a15-6-6:
     uses: ./.github/workflows/kernel-a15-6.6.yml
     secrets: inherit
@@ -99,4 +93,4 @@ jobs:
       custom_kernel_source: ${{ inputs.custom_kernel_source }}
       custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash }}
       apply_hide_stuff: ${{ inputs.apply_hide_stuff }}
- 
+      use_ccache: ${{ inputs.use_ccache }}
