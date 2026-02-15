@@ -57,6 +57,10 @@ on:
         required: false
         type: string
         default: latest
+      apply_hide_stuff:
+        required: false
+        type: boolean
+        default: true
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-latest
@@ -422,6 +426,7 @@ jobs:
           echo '完成lz4k_oplus补丁'
 
       - name: Apply additional hiding patches
+        if: ${{ inputs.apply_hide_stuff }}
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG/common"
@@ -433,8 +438,6 @@ jobs:
             cp ../../kernel_patches/69_hide_stuff.patch ./
             patch -p1 -F 3 < 69_hide_stuff.patch
           fi
-          echo "Print task_mmu.c to debug"
-          cat ./fs/proc/task_mmu.c
       - name: Configure LZ4KD & Lz4k_oplus
         if: ${{ inputs.use_zram }}
         run: |
