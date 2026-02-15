@@ -187,7 +187,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}/common  # The directory where you install clang
-          key: clang-${{ hashFiles('kernel_url.txt') }}
+          key: kernel-${{ hashFiles('kernel_url.txt') }}
       
       - name: Clone rodin source
         if: ${{  inputs.custom_kernel_source == 'rodin'  && steps.cache-kernel-source.outputs.cache-hit != 'true' }}
