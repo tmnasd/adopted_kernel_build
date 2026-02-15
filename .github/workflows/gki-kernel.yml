@@ -590,6 +590,7 @@ jobs:
           command: |
             set -e
             set -x
+            cd "$CONFIG/common"
 
             echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
             ./build_kernel.sh $ARGS
