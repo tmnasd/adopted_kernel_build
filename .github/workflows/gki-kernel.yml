@@ -307,6 +307,10 @@ jobs:
           # 对于 GitHub Actions 云编译，修改 LSM Kconfig
           echo "Modify security/Kconfig to include baseband_guard..."
           sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
+
+          sed -i '/^CONFIG_LSM=/s/"$/,baseband_guard"/' arch/arm64/configs/rodin_defconfig
+          # Verify changes
+          grep "CONFIG_LSM=" arch/arm64/configs/rodin_defconfig
           
           echo "Setup completed"
           
