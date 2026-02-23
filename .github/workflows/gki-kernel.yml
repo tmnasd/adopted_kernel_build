@@ -100,10 +100,12 @@ jobs:
       - name: Configure CCache
         if: ${{ inputs.use_ccache }}
         run: |
+          export CCACHE_DIR="$HOME/.ccache"
+          mkdir -p "$CCACHE_DIR"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> $GITHUB_ENV
           ccache --version
           ccache --max-size=2G
           ccache --set-config=compression=true
-          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
       
       # Step 2: Download toolchain if cache was not found
       - name: Download the toolchain.
