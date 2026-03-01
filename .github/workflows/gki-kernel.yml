@@ -76,8 +76,8 @@ jobs:
     steps:
       - name: Just some useless dbg info
         run: |
-          COMPILE_ARGS = "${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
-          echo "COMPILE_ARGS = $COMPILE_ARGS" >> $GITHUB_ENV
+          COMPILE_ARGS="${{ format('{0}{1}{2}{3}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
+          echo "COMPILE_ARGS=$COMPILE_ARGS" >> $GITHUB_ENV
           echo "Dbg: $COMPILE_ARGS"
       - name: Useless dbg2
         run: |
@@ -628,9 +628,7 @@ jobs:
             set -e
             set -x
             cd "$CONFIG/common"
-
-            echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
-            ./build_kernel.sh $ARGS
+            ./build_kernel.sh $COMPILE_ARGS
             echo "TIME=$(date "+%Y%m%d-%H%M%S")" >> $GITHUB_ENV
 
       - name: Add KPM patches
