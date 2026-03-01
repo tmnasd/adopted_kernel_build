@@ -74,14 +74,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Just some useless dbg info
-        run: |
-          COMPILE_ARGS="${{ format('{0}{1}{2}{3}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
-          echo "COMPILE_ARGS=$COMPILE_ARGS" >> $GITHUB_ENV
-          echo "Dbg: $COMPILE_ARGS"
-      - name: Useless dbg2
-        run: |
-          echo "Dbg2: $COMPILE_ARGS"
       - name: Maximize Build Space
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
@@ -106,6 +98,10 @@ jobs:
 
           echo "CONFIG set to: $CONFIG"
           mkdir -p "$CONFIG"
+
+          COMPILE_ARGS="${{ format('{0}{1}{2}{3}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
+          echo "COMPILE_ARGS=$COMPILE_ARGS" >> $GITHUB_ENV
+          echo "Compile arg set to: $COMPILE_ARGS"
       - name: Install ccache
         if: ${{ inputs.use_ccache }}
         run: sudo apt update && sudo apt upgrade -y && sudo apt install -y ccache python3 git curl
