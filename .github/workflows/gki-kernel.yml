@@ -65,6 +65,10 @@ on:
         required: false
         type: boolean
         default: true
+      use_susfs:
+        required: true
+        type: boolean
+        default: true
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-latest
@@ -85,6 +89,8 @@ jobs:
           
       - name: Set the CONFIG environment variable
         run: |
+          echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
+          echo $ARGS
           # Set CONFIG dynamically based on inputs values
           CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}"
 
@@ -317,6 +323,7 @@ jobs:
           echo "Setup completed"
           
       - name: Apply SuSFS4KSU patches
+        if: ${{ github.event.inputs.use_susfs == 'true' }}
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG"
@@ -360,7 +367,11 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Applying SUSFS patches for SukiSU..."
             cd ./KernelSU
-            echo "Applying SukiSU specific SUSFS patch..."
+            if [ ${{ inputs.kernelsu_branch }} == "Stable" ]; then
+              echo "Stable branch detected. Trying to apply official patches (might not work)"
+              cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
+              patch -p1 --forward --fuzz=3 < 10_enable_susfs_for_ksu.patch || true
+            fi
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
             echo "Applying SUSFS patches for WKSU..."
             cd ./Wild_KSU
@@ -441,9 +452,16 @@ jobs:
         run: |
           cd "$CONFIG"
           git clone https://github.com/maxsteeel/nomount.git
-          cp ./nomount/patches/nomount-susfs-kernel-6.6.patch ./common/
-          cd common
-          patch -p1 --fuzz=10 < nomount-susfs-kernel-6.6.patch
+          if [ "${{ inputs.use_susfs }}" == "true" ]; then
+            cp ./nomount/patches/nomount-susfs-kernel-6.6.patch ./common/
+            cd common
+            patch -p1 --fuzz=3 < nomount-susfs-kernel-6.6.patch
+          else
+            cp ./nomount/patches/nomount-kernel-6.6.patch ./common/
+            cd common
+            patch -p1 --fuzz=3 < nomount-kernel-6.6.patch
+          fi
+          
       - name: Copy the source file & apply LZ4KD & ZSTDN patches
         if: ${{ inputs.use_zram }}
         run: |
@@ -562,25 +580,30 @@ jobs:
           echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/rodin_defconfig
           echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/rodin_defconfig
 
-          # Add SUSFS configuration settings
-          echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          #if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
-          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          #else
-          #echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> ./common/arch/arm64/configs/gki_defconfig
-          #fi
-          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          if [ "${{ inputs.use_susfs }}" == "true" ]; then
+            # Add SUSFS configuration settings
+            echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            #if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
+            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            #else
+            #echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> ./common/arch/arm64/configs/gki_defconfig
+            #fi
+            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          fi
+          
+          # Add NoMount config
+          
           if [ "${{ inputs.nomount_support }}" == "true" ]; then
             echo "CONFIG_NOMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
           fi
