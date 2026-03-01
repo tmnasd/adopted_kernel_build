@@ -76,8 +76,12 @@ jobs:
     steps:
       - name: Just some useless dbg info
         run: |
-          echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
-          echo "Dbg: $ARGS"
+          COMPILE_ARGS = "${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
+          echo "COMPILE_ARGS = $COMPILE_ARGS" >> $GITHUB_ENV
+          echo "Dbg: $COMPILE_ARGS"
+      - name: Useless dbg2
+        run: |
+          echo "Dbg2: $COMPILE_ARGS"
       - name: Maximize Build Space
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
