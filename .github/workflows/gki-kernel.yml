@@ -74,6 +74,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Just some useless dbg info
+        run: |
+          echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
+          echo "Dbg: $ARGS"
       - name: Maximize Build Space
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
@@ -89,8 +93,7 @@ jobs:
           
       - name: Set the CONFIG environment variable
         run: |
-          echo "ARGS = ${{ format('{0}-susfs{1}{2}', inputs.kernelsu_variant, inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}" >> $GITHUB_ENV
-          echo $ARGS
+          
           # Set CONFIG dynamically based on inputs values
           CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}"
 
