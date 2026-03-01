@@ -296,7 +296,7 @@ jobs:
             echo "Adding KernelSU SukiSU..."
             if [ "${{ inputs.use_susfs }}" == "true" ]; then
               echo "Temporarily use other's commit to build with susfs"
-              git clone -b fix-syntax-error https://github.com/ahmed-alnassif/SukiSU-Ultra.git KernelSU
+              git clone -b fix-syntax-errors https://github.com/ahmed-alnassif/SukiSU-Ultra.git KernelSU
             fi
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
             
