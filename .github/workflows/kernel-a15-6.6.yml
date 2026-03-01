@@ -58,6 +58,10 @@ on:
         required: false
         type: boolean
         default: true
+      use_susfs:
+        required: true
+        type: boolean
+        default: true
 
 
 jobs:
@@ -109,3 +113,4 @@ jobs:
       custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}
       apply_hide_stuff: ${{ inputs.apply_hide_stuff  }}
       use_ccache: ${{ inputs.use_ccache }}
+      use_susfs: ${{ inputs.use_susfs }}
