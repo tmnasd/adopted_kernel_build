@@ -295,10 +295,6 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
-            if [ "${{ inputs.use_susfs }}" == "true" ]; then
-              echo "Temporarily use other's commit to build with susfs"
-              git clone -b fix-syntax-errors https://github.com/ahmed-alnassif/SukiSU-Ultra.git KernelSU
-            fi
             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
             
           elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
