@@ -213,8 +213,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: kernel-ccache-${{ hashFiles('kernel_url.txt') }}
-      
+          key: kernel-ccache-${{ hashFiles('kernel_url.txt') }}-${{ github.run_id }}
+          restore-keys: |
+            kernel-ccache-${{ hashFiles('kernel_url.txt') }}-
       - name: Clone rodin source
         if: ${{ inputs.custom_kernel_source == 'rodin' }}
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
