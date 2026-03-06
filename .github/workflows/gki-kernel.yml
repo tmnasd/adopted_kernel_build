@@ -86,7 +86,9 @@ jobs:
           remove-swapfile: 'true'        # Frees ~4 GB
           remove-cached-tools: 'false'   # Avoid unless confirmed safe
           verbose: 'true'                # Enable detailed logging
-          
+
+      - name: Checkout
+        uses: actions/checkout@v6
       - name: Set the CONFIG environment variable
         run: |
           
@@ -236,7 +238,10 @@ jobs:
           git clone ${{  inputs.custom_kernel_source  }} kernel_xiaomi_rodin
       - name: Move to common
         run: |
+          ls -a
           mv kernel_xiaomi_rodin $CONFIG/common
+          echo "Adding build script..."
+          mv build_kernel.sh $CONFIG/common
           cd "$CONFIG/common"
           ls -a
       
