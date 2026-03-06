@@ -111,7 +111,11 @@ make -j$(nproc --all) O="$OUT_DIR" "${MAKE_OPTS[@]}" || exit 1
 
 # Create temporary anykernel directory
 TIME=$(date "+%Y%m%d-%H%M%S")
-TEMP_ANY_KERNEL_DIR=$(readlink -f ${DIR}/../../AnyKernel3)
+if [ -d "$KERNEL_DIR/anykernel" ]; then
+    TEMP_ANY_KERNEL_DIR = "$KERNEL_DIR/anykernel"
+else
+    TEMP_ANY_KERNEL_DIR=$(readlink -f ${DIR}/../../AnyKernel3)
+fi
 
 # Copy kernel image
 if [ -f "$ZIMAGE_DIR/Image.gz-dtb" ]; then
@@ -124,7 +128,7 @@ fi
 
 # Create zip file in kernel root directory
 echo "Creating zip package..."
-ZIP_NAME="rodin-6.6.102-$1-$TIME-AnyKernel3.zip"
+ZIP_NAME="Rodin-6.6-$1-$TIME-AnyKernel3.zip"
 cd "$TEMP_ANY_KERNEL_DIR"
 zip -r9 "$KERNEL_DIR/$ZIP_NAME" ./*
 cd ..
