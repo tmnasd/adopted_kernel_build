@@ -112,7 +112,7 @@ make -j$(nproc --all) O="$OUT_DIR" "${MAKE_OPTS[@]}" || exit 1
 # Create temporary anykernel directory
 TIME=$(date "+%Y%m%d-%H%M%S")
 if [ -d "$KERNEL_DIR/anykernel" ]; then
-    TEMP_ANY_KERNEL_DIR = "$KERNEL_DIR/anykernel"
+    TEMP_ANY_KERNEL_DIR="$KERNEL_DIR/anykernel"
 else
     TEMP_ANY_KERNEL_DIR=$(readlink -f ${DIR}/../../AnyKernel3)
 fi
