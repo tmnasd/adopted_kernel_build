@@ -69,6 +69,18 @@ on:
         required: true
         type: boolean
         default: true
+      use_zermount:
+        required: true
+        type: boolean
+        default: false
+      use_enhanced_susfs:
+        required: true
+        type: boolean
+        default: false
+      use_superbuilders_susfs:
+        required: true
+        type: boolean
+        default: false
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-latest
@@ -197,12 +209,44 @@ jobs:
           echo "KERNEL_PATCHES=$KERNEL_PATCHES" >> $GITHUB_ENV
           # Sukisu的补丁仓库
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
+
+          # SuperBuilders patches
+          git clone https://github.com/Enginex0/Super-Builders.git -b feature/patch-restructrue
+
+          # Determine working SuperBuilders folder
+          variant_input="${{ inputs.kernelsu_variant }}"
+
+
+          case "$variant_input" in
+              "Next")     
+                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/KernelSU-Next/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-kernelsu-next-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=KernelSU-Next" >> $GITHUB_ENV
+                ;;
+              "SukiSU")   
+                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/SukiSU-Ultra/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-sukisu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=KernelSU-Next" >> $GITHUB_ENV
+                ;;
+              "WKSU")     
+                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/WildKSU/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-wksu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=Wild_KSU" >> $GITHUB_ENV
+                ;;
+              *) 
+                echo "This variant of KSU is not supported by Super Builders!"
+                echo "SUPER_DIR=UNSUPPORTED" >> $GITHUB_ENV
+                ;;
+          esac
+          ;;
+
+              
       - name: Set CONFIG variable
         run: |
           # Set CONFIG dynamically based on inputs values
           CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}"
 
-          # Set CONFIG as an environment variable for future steps
+          # Set CONFIG as an environment variable fogle the tab key moving focus. Alterr future steps
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
 
           echo "CONFIG set to: $CONFIG"
@@ -238,12 +282,9 @@ jobs:
           git clone ${{  inputs.custom_kernel_source  }} kernel_xiaomi_rodin
       - name: Move to common
         run: |
-          ls -a
           mv kernel_xiaomi_rodin $CONFIG/common
           echo "Adding build script..."
           mv build_kernel.sh $CONFIG/common
-          cd "$CONFIG/common"
-          ls -a
       
       - name: Determine the branch of KernelSU
         run: |
@@ -294,7 +335,7 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             echo "Adding KernelSU Next..."
-            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh" | bash $BRANCH
+            curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/dev/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "Adding KernelSU MKSU..."
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
@@ -311,7 +352,7 @@ jobs:
           fi
 
       - name: Add Baseband-guard support
-        if: ${{ github.event.inputs.BBG == 'true' }}
+        if: ${{ github.event.inputs.BBG }}
         run: |
           cd "$CONFIG/common"
           
@@ -332,19 +373,16 @@ jobs:
           
           echo "Setup completed"
           
-      - name: Apply SuSFS4KSU patches
-        if: ${{ github.event.inputs.use_susfs == 'true' }}
+      - name: Enable susfs4ksu in ksu
+        if: ${{ github.event.inputs.use_susfs }}
         run: |
-          echo "更改为配置目录: $CONFIG..."
+          echo "Change working directory to: $CONFIG..."
           cd "$CONFIG"
 
-          echo "Applying SUSFS patches..."
+          echo "Enabling SUSFS in KSU..."
 
           # Copy SUSFS patches
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
-          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
-          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-
+          
           if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "Applying SUSFS patches for Official KernelSU..."
             cd ./KernelSU
@@ -393,18 +431,35 @@ jobs:
             exit 1
           fi
 
-          cd ../common
-          FORMATTED_BRANCH="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
-          if grep -q deprecated <<< "$REMOTE_BRANCH" && \
-             { [ "$FORMATTED_BRANCH" == "android12-5.10" ] && \
-               [ ${{ inputs.sub_level }} -lt 136 ]; }; then
-            patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
-            curl -LSs https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/legacy/fdinfo.c.patch -o fdinfo.c.patch
-            patch -p1 < fdinfo.c.patch
+      - name: Apply susfs4ksu patches
+        if: ${{ github.event.inputs.use_susfs }}
+        run: |
+          cd "$CONFIG"
+          if [ "${{ inputs.use_superbuilders_susfs }} " == "false" || "$SUPER_DIR" == "UNSUPPORTED" ]; then
+            echo "Using simonpunk's patch"
+            cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
+            cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
+            cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+            cd common
+            patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
           else
+            echo "Using SuperBuilders patch"
+            cp "../$SUPER_DIR/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch" ./common
+            cd common
             patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
           fi
+      - name: Apply susfs4ksu enhanced patch
+        if: ${{ github.event.inputs.use_enhanced_susfs && github.env.SUPER_DIR != 'UNSUPPORTED' }}
+        run: |
+          cd "$CONFIG"
+          echo "Apply enhanced susfs4ksu patch"
+          cp "../$SUPER_DIR/51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch" ./common
+          patch -p1 --fuzz=3 < 51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
+          echo "Enable extra features in KSU"
+          cp "../$SUPER_DIR/$KSU_ENHANCED_PATCH" "./$KSU_DIR"
+          cd "$KSU_DIR"
+          patch -p1 --fuzz=3 < $KSU_ENHANCED_PATCH
       - name: some fixes
         run: |
           cd "$CONFIG/common"
@@ -457,7 +512,7 @@ jobs:
           cp ./kernel_patches/common/unicode_bypass_fix_6.1+.patch ./$CONFIG/common/
           cd "$CONFIG/common"
           patch -p1 < unicode_bypass_fix_6.1+.patch
-      - name: Apply NoMount kernel patches
+      - name: Apply NoMount VFS kernel patch
         if: ${{ github.event.inputs.nomount_support == 'true' }}
         run: |
           cd "$CONFIG"
@@ -471,7 +526,17 @@ jobs:
             cd common
             patch -p1 --fuzz=3 < nomount-kernel-6.6.patch
           fi
-          
+      - name: Apply ZeroMount VFS kernel patch
+        if: ${{ github.event.inputs.use_zermount }}
+        run: |
+          if [ "$SUPER_DIR" == "UNSUPPORTED" ]; then
+            echo "Be cautioned! You're applying ZeroMount VFS patch on an unsupported ksu variant. Stuff may fail!"
+            cp ./SuperBuilders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/WildKSU/patches/60_zermount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
+          else
+            cp ./$SUPER_DIR/60_zermount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
+          fi
+          cd "$CONFIG/common"
+          patch -p1 --fuzz=3 < 60_zermount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch
       - name: Copy the source file & apply LZ4KD & ZSTDN patches
         if: ${{ inputs.use_zram }}
         run: |
@@ -610,12 +675,25 @@ jobs:
             echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/rodin_defconfig
             echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/rodin_defconfig
             echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            # Enhanced susfs
+            if [ "${{ inputs.use_enhanced_susfs }}" == "true" ]; then
+              echo "CONFIG_KSU_SUSFS_SUS_KSTAT_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+              echo "CONFIG_KSU_SUSFS_UNICODE_FILTER=y" >> ./common/arch/arm64/configs/rodin_defconfig
+              echo "CONFIG_KSU_SUSFS_UID_GATED_HIDING=y" >> ./common/arch/arm64/configs/rodin_defconfig
+              echo "CONFIG_KSU_SUSFS_HIDDEN_NAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
+              echo "CONFIG_KSU_SUSFS_HARDENED=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            fi
           fi
           
           # Add NoMount config
           
           if [ "${{ inputs.nomount_support }}" == "true" ]; then
             echo "CONFIG_NOMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          fi
+
+          # ZeroMount config
+          if [ "${{ inputs.use_zermount }}" == "true" ]; then
+            echo "CONFIG_ZEROMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
           fi
           
           # Remove check_defconfig
