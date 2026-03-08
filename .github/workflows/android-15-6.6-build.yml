@@ -117,3 +117,6 @@ jobs:
       apply_hide_stuff: ${{ inputs.apply_hide_stuff }}
       use_ccache: ${{ inputs.use_ccache }}
       use_susfs: ${{ inputs.use_susfs }}
+      use_enhanced_susfs: ${{ inputs.use_enhanced_susfs }}
+      use_superbuilders_susfs: ${{ inputs.use_superbuilders_susfs }}
+      use_zeromount: ${{ inputs.use_zeromount }}
