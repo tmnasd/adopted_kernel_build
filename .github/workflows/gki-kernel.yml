@@ -15,12 +15,6 @@ on:
       kernel_version:
         required: true
         type: string
-      sub_level:
-        required: true
-        type: string
-      os_patch_level:
-        required: true
-        type: string
       kernelsu_variant:
         required: true
         type: string
@@ -105,7 +99,7 @@ jobs:
         run: |
           
           # Set CONFIG dynamically based on inputs values
-          CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}"
+          CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
 
           # Set CONFIG as an environment variable for future steps
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
@@ -153,7 +147,7 @@ jobs:
         id: cache-clang
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}/toolchains/clang  # The directory where you install clang
+          path: ${{ github.workspace }}/${{ inputs.android_version }}-${{ inputs.kernel_version }}/toolchains/clang  # The directory where you install clang
           key: clang-${{ hashFiles('clang_url.txt') }}
       - name: Download AOSP Clang
         if: steps.cache-clang.outputs.cache-hit != 'true'
@@ -244,7 +238,7 @@ jobs:
       - name: Set CONFIG variable
         run: |
           # Set CONFIG dynamically based on inputs values
-          CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}"
+          CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
 
           # Set CONFIG as an environment variable fogle the tab key moving focus. Alterr future steps
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
