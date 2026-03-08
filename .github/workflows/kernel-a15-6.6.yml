@@ -7,101 +7,70 @@ on:
   workflow_call:  # This allows this workflow to be called from another workflow
     inputs:
       clang_custom_link:
-        required: false
+        required: true
         type: string
         default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
       kernelsu_variant:
         required: true
         type: string
-        default: Next
       kernelsu_branch:
         required: true
         type: string
-        default: Stable
       kernelsu_custom_commit_hash:
         required: false
         type: string
-        default: latest
       use_zram:
         description: 'Add ZRAM'
         required: true
         type: boolean
-        default: true
       use_kpm:
         description: 'Enable KPM?'
         required: false
         type: boolean
-        default: false
       BBG:
         description: 'Add BBG？'
         required: true
         type: boolean
-        default: false
       nomount_support:
         description: 'Adds support for NoMount metamodule'
         required: true
         type: boolean
-        default: true
       custom_kernel_source:
         required: false
         type: string
-        default: rodin
       custom_susfs_commit_hash:
         required: false
         type: string
-        default: latest
       apply_hide_stuff:
         required: false
         type: boolean
-        default: true
       use_ccache:
         required: false
         type: boolean
-        default: true
       use_susfs:
         required: true
         type: boolean
-        default: true
+      use_enhanced_susfs:
+        required: true
+        type: boolean
+      use_superbuilders_susfs:
+        required: true
+        type: boolean
+      use_zeromount:
+        required: true
+        type: boolean
 
 
 jobs:
   build-kernel-a15-6-6-kernelsu-susfs:
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          #- sub_level: "30"
-          #  os_patch_level: "2024-08"
-          # - sub_level: "46"
-          #   os_patch_level: "2024-09"
-          #- sub_level: "50"
-          #  os_patch_level: "2024-10"
-          #- sub_level: "56"
-          #  os_patch_level: "2024-11"
-          #- sub_level: "57"
-          #  os_patch_level: "2024-12"
-          #- sub_level: "58"
-          #  os_patch_level: "2025-01"
-          #- sub_level: "66"
-          #  os_patch_level: "2025-02"
-          #- sub_level: "77"
-          #  os_patch_level: "2025-03"
-          #- sub_level: "82"
-          #  os_patch_level: "2025-04"
-          #- sub_level: "87"
-          #  os_patch_level: "2025-05"
-          - sub_level: "102"
-            os_patch_level: "2025-10"
-          #- sub_level: "X"
-          #  os_patch_level: "lts"
     uses: ./.github/workflows/gki-kernel.yml
     secrets: inherit
     with:
       clang_custom_link: ${{ inputs.clang_custom_link || 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz' }}
       android_version: "android15"
       kernel_version: "6.6"
-      sub_level: ${{ matrix.sub_level }}
-      os_patch_level: ${{ matrix.os_patch_level }}
       kernelsu_variant: ${{ inputs.kernelsu_variant || 'Next' }}
       kernelsu_branch: ${{ inputs.kernelsu_branch || 'Dev' }}
       kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash || 'latest' }}
@@ -114,3 +83,6 @@ jobs:
       apply_hide_stuff: ${{ inputs.apply_hide_stuff  }}
       use_ccache: ${{ inputs.use_ccache }}
       use_susfs: ${{ inputs.use_susfs }}
+      use_enhanced_susfs: ${{ inputs.use_enhanced_susfs }}
+      use_superbuilders_susfs: ${{ inputs.use_superbuilders_susfs }}
+      use_zeromount: ${{ inputs.use_zeromount }}
