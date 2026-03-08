@@ -69,7 +69,7 @@ on:
         required: true
         type: boolean
         default: true
-      use_zermount:
+      use_zeromount:
         required: true
         type: boolean
         default: false
@@ -527,7 +527,7 @@ jobs:
             patch -p1 --fuzz=3 < nomount-kernel-6.6.patch
           fi
       - name: Apply ZeroMount VFS kernel patch
-        if: ${{ github.event.inputs.use_zermount }}
+        if: ${{ github.event.inputs.use_zeromount }}
         run: |
           if [ "$SUPER_DIR" == "UNSUPPORTED" ]; then
             echo "Be cautioned! You're applying ZeroMount VFS patch on an unsupported ksu variant. Stuff may fail!"
@@ -692,7 +692,7 @@ jobs:
           fi
 
           # ZeroMount config
-          if [ "${{ inputs.use_zermount }}" == "true" ]; then
+          if [ "${{ inputs.use_zeromount }}" == "true" ]; then
             echo "CONFIG_ZEROMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
           fi
           
