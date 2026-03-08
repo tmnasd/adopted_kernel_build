@@ -205,7 +205,7 @@ jobs:
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
 
           # SuperBuilders patches
-          git clone -b feature/patch-restructure --single-branch https://github.com/Enginex0/Super-Builders.git
+          git clone https://github.com/Enginex0/Super-Builders.git
 
           # Determine working SuperBuilders folder
           variant_input="${{ inputs.kernelsu_variant }}"
