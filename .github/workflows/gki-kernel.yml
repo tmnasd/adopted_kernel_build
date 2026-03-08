@@ -206,8 +206,6 @@ jobs:
 
           # SuperBuilders patches
           git clone -b feature/patch-restructure --single-branch https://github.com/Enginex0/Super-Builders.git
-          cd Super-Builders
-          ls -aR
 
           # Determine working SuperBuilders folder
           variant_input="${{ inputs.kernelsu_variant }}"
@@ -449,7 +447,9 @@ jobs:
           cd "$CONFIG"
           echo "Apply enhanced susfs4ksu patch"
           cp ../$SUPER_DIR/51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common
+          cd common
           patch -p1 --fuzz=3 < 51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
+          cd ..
 
           echo "Enable extra features in KSU"
           cp ../$SUPER_DIR/$KSU_ENHANCED_PATCH ./$KSU_DIR
