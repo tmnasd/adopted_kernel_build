@@ -220,7 +220,7 @@ jobs:
               "SukiSU")   
                 echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/SukiSU-Ultra/patches" >> $GITHUB_ENV 
                 echo "KSU_ENHANCED_PATCH=70_ksu_safety-sukisu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
-                echo "KSU_DIR=KernelSU-Next" >> $GITHUB_ENV
+                echo "KSU_DIR=KernelSU" >> $GITHUB_ENV
                 ;;
               "WKSU")     
                 echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/WildKSU/patches" >> $GITHUB_ENV 
@@ -232,7 +232,6 @@ jobs:
                 echo "SUPER_DIR=UNSUPPORTED" >> $GITHUB_ENV
                 ;;
           esac
-          ;;
 
               
       - name: Set CONFIG variable
