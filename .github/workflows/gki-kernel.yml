@@ -428,7 +428,7 @@ jobs:
         if: ${{ github.event.inputs.use_susfs }}
         run: |
           cd "$CONFIG"
-          if [ "${{ inputs.use_superbuilders_susfs }} " == "false" || "$SUPER_DIR" == "UNSUPPORTED" ]; then
+          if [[ "${{ inputs.use_superbuilders_susfs }}" == "false" || "$SUPER_DIR" == "UNSUPPORTED" ]]; then
             echo "Using simonpunk's patch"
             cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
             cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
@@ -437,7 +437,7 @@ jobs:
             patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
           else
             echo "Using SuperBuilders patch"
-            cp "../$SUPER_DIR/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch" ./common
+            cp ../$SUPER_DIR/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common
             cd common
             patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
           fi
@@ -446,11 +446,11 @@ jobs:
         run: |
           cd "$CONFIG"
           echo "Apply enhanced susfs4ksu patch"
-          cp "../$SUPER_DIR/51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch" ./common
+          cp ../$SUPER_DIR/51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common
           patch -p1 --fuzz=3 < 51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
           echo "Enable extra features in KSU"
-          cp "../$SUPER_DIR/$KSU_ENHANCED_PATCH" "./$KSU_DIR"
+          cp ../$SUPER_DIR/$KSU_ENHANCED_PATCH ./$KSU_DIR
           cd "$KSU_DIR"
           patch -p1 --fuzz=3 < $KSU_ENHANCED_PATCH
       - name: some fixes
