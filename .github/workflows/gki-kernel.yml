@@ -531,12 +531,12 @@ jobs:
         run: |
           if [ "$SUPER_DIR" == "UNSUPPORTED" ]; then
             echo "Be cautioned! You're applying ZeroMount VFS patch on an unsupported ksu variant. Stuff may fail!"
-            cp ./SuperBuilders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/WildKSU/patches/60_zermount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
+            cp ./SuperBuilders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/WildKSU/patches/60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
           else
-            cp ./$SUPER_DIR/60_zermount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
+            cp ./$SUPER_DIR/60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
           fi
           cd "$CONFIG/common"
-          patch -p1 --fuzz=3 < 60_zermount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch
+          patch -p1 --fuzz=3 < 60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch
       - name: Copy the source file & apply LZ4KD & ZSTDN patches
         if: ${{ inputs.use_zram }}
         run: |
