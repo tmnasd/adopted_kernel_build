@@ -37,6 +37,17 @@ on:
         required: true
         type: boolean
         default: true
+      use_superbuilders_susfs:
+        description: "Use SuperBuilders' susfs4ksu patch"
+        required: true
+        type: boolean
+        default: false
+      use_enhanced_susfs:
+        description: "Apply enhanced susfs4ksu patches"
+        required: true
+        type: boolean
+        default: false
+      
       use_zram:
         description: 'Add ZRAM'
         required: true
@@ -46,17 +57,22 @@ on:
         description: 'Enable the KPM feature?'
         required: false
         type: boolean
-        default: true
+        default: false
       BBG:
         description: "Enable kernel-level blocking of unauthorized writes to critical partitions/device nodes (LSM)？"
         required: true
         type: boolean
-        default: false
+        default: true
       nomount_support:
-        description: "Enable kernel-level systemless modification (NoMount) compability"
+        description: "Enable NoMount VFS driver"
         required: true
         type: boolean
-        default: true
+        default: false
+      use_zeromount:
+        description: "Enable ZeroMount VFS driver (do not enable both NoMount & ZeroMount)"
+        required: true
+        type: boolean
+        default: false
       apply_hide_stuff:
         description: "Apply additional hiding patches (see WildKernels/kernel_patches for more info). Disable this if you're having compilation issues"
         required: false
