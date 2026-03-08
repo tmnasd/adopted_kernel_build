@@ -674,7 +674,7 @@ jobs:
             if [ "${{ inputs.use_enhanced_susfs }}" == "true" ]; then
               echo "CONFIG_KSU_SUSFS_SUS_KSTAT_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
               echo "CONFIG_KSU_SUSFS_UNICODE_FILTER=y" >> ./common/arch/arm64/configs/rodin_defconfig
-              echo "CONFIG_KSU_SUSFS_UID_GATED_HIDING=y" >> ./common/arch/arm64/configs/rodin_defconfig
+              echo "CONFIG_KSU_SUSFS_UID_GATED_HIDING=n" >> ./common/arch/arm64/configs/rodin_defconfig
               echo "CONFIG_KSU_SUSFS_HIDDEN_NAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
               echo "CONFIG_KSU_SUSFS_HARDENED=y" >> ./common/arch/arm64/configs/rodin_defconfig
             fi
