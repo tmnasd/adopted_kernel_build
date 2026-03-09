@@ -345,7 +345,7 @@ jobs:
           fi
 
       - name: Add Baseband-guard support
-        if: ${{ github.event.inputs.BBG }}
+        if: ${{ inputs.BBG }}
         run: |
           cd "$CONFIG/common"
           
@@ -367,7 +367,7 @@ jobs:
           echo "Setup completed"
           
       - name: Enable susfs4ksu in ksu
-        if: ${{ github.event.inputs.use_susfs }}
+        if: ${{ inputs.use_susfs }}
         run: |
           echo "Change working directory to: $CONFIG..."
           cd "$CONFIG"
@@ -425,7 +425,7 @@ jobs:
           fi
 
       - name: Apply susfs4ksu patches
-        if: ${{ github.event.inputs.use_susfs }}
+        if: ${{ inputs.use_susfs }}
         run: |
           cd "$CONFIG"
           if [[ "${{ inputs.use_superbuilders_susfs }}" == "false" || "$SUPER_DIR" == "UNSUPPORTED" ]]; then
@@ -442,7 +442,7 @@ jobs:
             patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
           fi
       - name: Apply susfs4ksu enhanced patch
-        if: ${{ github.event.inputs.use_enhanced_susfs && github.env.SUPER_DIR != 'UNSUPPORTED' }}
+        if: ${{ inputs.use_enhanced_susfs && github.env.SUPER_DIR != 'UNSUPPORTED' }}
         run: |
           cd "$CONFIG"
           echo "Apply enhanced susfs4ksu patch"
@@ -522,7 +522,7 @@ jobs:
             patch -p1 --fuzz=3 < nomount-kernel-6.6.patch
           fi
       - name: Apply ZeroMount VFS kernel patch
-        if: ${{ github.event.inputs.use_zeromount }}
+        if: ${{ inputs.use_zeromount }}
         run: |
           if [ "$SUPER_DIR" == "UNSUPPORTED" ]; then
             echo "Be cautioned! You're applying ZeroMount VFS patch on an unsupported ksu variant. Stuff may fail!"
