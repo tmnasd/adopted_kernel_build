@@ -442,7 +442,7 @@ jobs:
             patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
           fi
       - name: Apply susfs4ksu enhanced patch
-        if: ${{ inputs.use_enhanced_susfs && github.env.SUPER_DIR != 'UNSUPPORTED' }}
+        if: ${{ inputs.use_susfs && inputs.use_enhanced_susfs && github.env.SUPER_DIR != 'UNSUPPORTED' }}
         run: |
           cd "$CONFIG"
           echo "Apply enhanced susfs4ksu patch"
@@ -508,7 +508,7 @@ jobs:
           cd "$CONFIG/common"
           patch -p1 < unicode_bypass_fix_6.1+.patch
       - name: Apply NoMount VFS kernel patch
-        if: ${{ github.event.inputs.nomount_support == 'true' }}
+        if: ${{ inputs.nomount_support }}
         run: |
           cd "$CONFIG"
           git clone https://github.com/maxsteeel/nomount.git
