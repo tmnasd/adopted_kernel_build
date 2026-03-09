@@ -654,17 +654,9 @@ jobs:
             # Add SUSFS configuration settings
             echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/rodin_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            #if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
             echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            #else
-            #echo "CONFIG_KSU_SUSFS_SUS_PATH=n" >> ./common/arch/arm64/configs/gki_defconfig
-            #fi
             echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
             echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
             echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/rodin_defconfig
             echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/rodin_defconfig
@@ -674,7 +666,6 @@ jobs:
             if [ "${{ inputs.use_enhanced_susfs }}" == "true" ]; then
               echo "CONFIG_KSU_SUSFS_SUS_KSTAT_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
               echo "CONFIG_KSU_SUSFS_UNICODE_FILTER=y" >> ./common/arch/arm64/configs/rodin_defconfig
-              echo "CONFIG_KSU_SUSFS_UID_GATED_HIDING=n" >> ./common/arch/arm64/configs/rodin_defconfig
               echo "CONFIG_KSU_SUSFS_HIDDEN_NAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
               echo "CONFIG_KSU_SUSFS_HARDENED=y" >> ./common/arch/arm64/configs/rodin_defconfig
             fi
