@@ -102,7 +102,7 @@ echo "**** Building with $KBUILD_COMPILER_STRING ****"
 echo "**** Defconfig: $KERNEL_DEFCONFIG ****"
 
 # Build kernel
-make O="$OUT_DIR" $KERNEL_DEFCONFIG "${MAKE_OPTS[@]}" $INCLUDE_PATHS || exit 1
+make O="$OUT_DIR" $KERNEL_DEFCONFIG "${MAKE_OPTS[@]}" || exit 1
 make -j$(nproc --all) O="$OUT_DIR" "${MAKE_OPTS[@]}" || exit 1
 
 
