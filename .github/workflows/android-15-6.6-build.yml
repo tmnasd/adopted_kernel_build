@@ -125,3 +125,4 @@ jobs:
       use_enhanced_susfs: ${{ inputs.use_enhanced_susfs }}
       use_superbuilders_susfs: ${{ inputs.use_superbuilders_susfs }}
       use_zeromount: ${{ inputs.use_zeromount }}
+      defconfig_name: ${{ inputs.defconfig_name }}
