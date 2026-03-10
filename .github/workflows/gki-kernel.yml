@@ -719,11 +719,16 @@ jobs:
             mv oImage Image
             cd ../../..
           fi
+      - name: Move artifacts to upload folder
+        run: |
+          mv ./$CONFIG/common/*.zip ./
+          mv ./$CONFIG/out/arch/arm64/boot/Image ./
+          mv ./$CONFIG/out/arch/arm64/boot/Image.gz ./
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}-${{ env.TIME }}
+          name: rodin-out-${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}-${{ env.TIME }}
           path: | 
-            **/*.zip
-            **/Image
-            **/Image.gz
+            *.zip
+            Image
+            Image.gz
