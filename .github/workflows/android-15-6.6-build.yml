@@ -88,6 +88,11 @@ on:
         required: false
         type: string
         default: rodin
+      defconfig_name:
+        description: "Specify defconfig name to use to compile kernel source. Must exist in ./arch/arm64/configs"
+        required: true
+        type: string
+        default: rodin_defconfig
       custom_susfs_commit_hash:
         description: "Susfs4ksu custom commit hash. Use latest to get latest commit"
         required: false
