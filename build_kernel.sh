@@ -2,10 +2,10 @@
 set -e
 
 # Configuration
-USING_CCACHE="$2"
+USING_CCACHE="$3"
 DIR=$(readlink -f .)
 MAIN=$(readlink -f ${DIR}/..)
-KERNEL_DEFCONFIG=rodin_defconfig
+KERNEL_DEFCONFIG="$1"
 CLANG_DIR="$MAIN/toolchains/clang"
 KERNEL_DIR=$(pwd)
 OUT_DIR="$MAIN/out"
@@ -128,7 +128,7 @@ fi
 
 # Create zip file in kernel root directory
 echo "Creating zip package..."
-ZIP_NAME="Rodin-6.6-$1-$TIME-AnyKernel3.zip"
+ZIP_NAME="Rodin-6.6-$2-$TIME-AnyKernel3.zip"
 cd "$TEMP_ANY_KERNEL_DIR"
 zip -r9 "$KERNEL_DIR/$ZIP_NAME" ./*
 cd ..
