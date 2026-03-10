@@ -75,6 +75,10 @@ on:
         required: true
         type: boolean
         default: false
+      defconfig_name:
+        required: true
+        type: string
+        default: rodin_defconfig
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-latest
@@ -110,6 +114,9 @@ jobs:
           COMPILE_ARGS="${{ format('{0}{1}{2}{3}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
           echo "COMPILE_ARGS=$COMPILE_ARGS" >> $GITHUB_ENV
           echo "Compile arg set to: $COMPILE_ARGS"
+
+          echo "DEFCONFIG=${{ inputs.defconfig_name }}" >> $GITHUB_ENV
+          echo "Defconfig set to: $DEFCONFIG"
       - name: Install ccache
         if: ${{ inputs.use_ccache }}
         run: sudo apt update && sudo apt upgrade -y && sudo apt install -y ccache python3 git curl
@@ -621,65 +628,65 @@ jobs:
           echo "Adding configuration settings to rodin_defconfig..."
 
           # Add KSU configuration settings
-          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/$DEFCONFIG
 
           if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             echo "CONFIG_KSU_KPROBES_HOOK=n" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/$DEFCONFIG
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           fi
           
           # Add additional tmpfs config setting
-          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
 
           # Add additional config setting
-          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/rodin_defconfig
+          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
 
           # Add BBR Config
-          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_TCP_CONG_BIC=n" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/rodin_defconfig
-          echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/rodin_defconfig
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_BIC=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/$DEFCONFIG
 
           if [ "${{ inputs.use_susfs }}" == "true" ]; then
             # Add SUSFS configuration settings
-            echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/rodin_defconfig
-            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
             # Enhanced susfs
             if [ "${{ inputs.use_enhanced_susfs }}" == "true" ]; then
-              echo "CONFIG_KSU_SUSFS_SUS_KSTAT_REDIRECT=y" >> ./common/arch/arm64/configs/rodin_defconfig
-              echo "CONFIG_KSU_SUSFS_UNICODE_FILTER=y" >> ./common/arch/arm64/configs/rodin_defconfig
-              echo "CONFIG_KSU_SUSFS_HIDDEN_NAME=y" >> ./common/arch/arm64/configs/rodin_defconfig
-              echo "CONFIG_KSU_SUSFS_HARDENED=y" >> ./common/arch/arm64/configs/rodin_defconfig
+              echo "CONFIG_KSU_SUSFS_SUS_KSTAT_REDIRECT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+              echo "CONFIG_KSU_SUSFS_UNICODE_FILTER=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+              echo "CONFIG_KSU_SUSFS_HIDDEN_NAME=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+              echo "CONFIG_KSU_SUSFS_HARDENED=y" >> ./common/arch/arm64/configs/$DEFCONFIG
             fi
           fi
           
           # Add NoMount config
           
           if [ "${{ inputs.nomount_support }}" == "true" ]; then
-            echo "CONFIG_NOMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_NOMOUNT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
           fi
 
           # ZeroMount config
           if [ "${{ inputs.use_zeromount }}" == "true" ]; then
-            echo "CONFIG_ZEROMOUNT=y" >> ./common/arch/arm64/configs/rodin_defconfig
+            echo "CONFIG_ZEROMOUNT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
           fi
           
           # Remove check_defconfig
