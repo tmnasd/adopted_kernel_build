@@ -234,6 +234,11 @@ jobs:
                 echo "KSU_ENHANCED_PATCH=70_ksu_safety-wksu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
                 echo "KSU_DIR=Wild_KSU" >> $GITHUB_ENV
                 ;;
+              "ReSukiSU")
+                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/ReSukiSU/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-resukisu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=KernelSU" >> $GITHUB_ENV
+                ;;
               *) 
                 echo "This variant of KSU is not supported by Super Builders!"
                 echo "SUPER_DIR=UNSUPPORTED" >> $GITHUB_ENV
@@ -294,7 +299,7 @@ jobs:
           case "$branch_input" in
             "Stable")
               case "$variant_input" in
-                "Official" | "MKSU") echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "Official" | "MKSU" | "ReSukiSU") echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 "Next" | "WKSU")      echo "BRANCH=-s stable" >> $GITHUB_ENV ;;
                 "SukiSU")           echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 "MamboSU")          echo "BRANCH=-s master" >> $GITHUB_ENV ;;
@@ -311,6 +316,7 @@ jobs:
                 "WKSU")              echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
                 "MamboSU")           echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
                 "Next")              echo "BRANCH=-s dev_susfs" >> $GITHUB_ENV  ;;
+                "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -349,6 +355,9 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
             echo "Adding MamboSU..."
             curl -LSs "https://raw.githubusercontent.com/RapliVx/KernelSU/refs/heads/master/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+            echo "Adding ReSukiSU..."
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
           fi
 
       - name: Add Baseband-guard support
@@ -425,6 +434,9 @@ jobs:
             cd ./Wild_KSU
           elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
             echo "Looks like MamboSU doesn't need any additional patches. Skipping for now..."
+            cd ./KernelSU
+          elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+            echo "Looks like ReSukiSU doesn't need any additional patches. Skipping for now..."
             cd ./KernelSU
           else
             echo "Invalid KernelSU variant selected!"
