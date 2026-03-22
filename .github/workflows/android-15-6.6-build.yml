@@ -88,12 +88,12 @@ on:
         description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
         required: false
         type: string
-        default: rodin
+        default: 'https://github.com/tmnasd/capybara-aosp-gki.git --depth 1'
       defconfig_name:
         description: "Specify defconfig name to use to compile kernel source. Must exist in ./arch/arm64/configs"
         required: true
         type: string
-        default: rodin_defconfig
+        default: capybara_defconfig
       custom_susfs_commit_hash:
         description: "Susfs4ksu custom commit hash. Use latest to get latest commit"
         required: false
@@ -104,7 +104,7 @@ on:
         description: "Clang link you want to use to compile the kernel"
         required: true
         type: string
-        default: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz
+        default: https://github.com/ZyCromerZ/Clang/releases/download/23.0.0git-20260129-release/Clang-23.0.0git-20260129.tar.gz
 jobs:
  build-kernel-a15-6-6:
     uses: ./.github/workflows/kernel-a15-6.6.yml
