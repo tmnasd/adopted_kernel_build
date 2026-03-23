@@ -53,7 +53,7 @@ on:
         description: 'Add ZRAM'
         required: true
         type: boolean
-        default: true
+        default: false
       use_kpm:
         description: 'Enable the KPM feature?'
         required: false
@@ -63,7 +63,7 @@ on:
         description: "Enable kernel-level blocking of unauthorized writes to critical partitions/device nodes (LSM)？"
         required: true
         type: boolean
-        default: true
+        default: false
       nomount_support:
         description: "Enable NoMount VFS driver"
         required: true
@@ -78,7 +78,7 @@ on:
         description: "Apply additional hiding patches (see WildKernels/kernel_patches for more info). Disable this if you're having compilation issues"
         required: false
         type: boolean
-        default: true
+        default: false
       use_ccache:
         description: "Use CCache to cache the compilation result. This helps speed up later compile session, but requires a supported build script"
         required: false
