@@ -71,6 +71,7 @@ if [[ "$USING_CCACHE" == "true" ]] ; then
     HOSTLD=ld.lld
     LLVM=1
     LLVM_IAS=1
+    KCFLAGS="-w"
   )
 else
   MAKE_OPTS=(
@@ -87,6 +88,7 @@ else
     HOSTLD=ld.lld
     LLVM=1
     LLVM_IAS=1
+    KCFLAGS="-w"
   )
 fi
 
