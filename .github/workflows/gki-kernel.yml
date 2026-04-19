@@ -511,18 +511,6 @@ jobs:
             fi
           fi
   
-      - name: Apply the new HOOKS patch
-        run: |
-          echo "更改为配置目录: $CONFIG..."
-          cd "$CONFIG/common"
-
-          if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
-            #echo "Applying hooks for KernelSU-Next..."
-            #cp ../../kernel_patches/next/scope_min_manual_hooks_v1.6.patch ./
-            patch -p1 -F 3 < scope_min_manual_hooks_v1.6.patch
-          elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            echo "Applying hooks for SukiSU..."
-          fi
       - name: Zero-width character fix
         run: |
           cp ./kernel_patches/common/unicode_bypass_fix_6.1+.patch ./$CONFIG/common/
