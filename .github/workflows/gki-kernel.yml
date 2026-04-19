@@ -315,7 +315,7 @@ jobs:
                 "SukiSU")            echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
                 "WKSU")              echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
                 "MamboSU")           echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
-                "Next")              echo "BRANCH=-s dev" >> $GITHUB_ENV  ;;
+                "Next")              echo "BRANCH=-s dev-susfs" >> $GITHUB_ENV  ;;
                 "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
@@ -341,7 +341,7 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             echo "Adding KernelSU Next..."
-            curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/dev/kernel/setup.sh" | bash $BRANCH
+            curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash $BRANCH
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "Adding KernelSU MKSU..."
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
