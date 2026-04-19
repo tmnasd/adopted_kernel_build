@@ -315,7 +315,7 @@ jobs:
                 "SukiSU")            echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
                 "WKSU")              echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
                 "MamboSU")           echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
-                "Next")              echo "BRANCH=-s dev_susfs" >> $GITHUB_ENV  ;;
+                "Next")              echo "BRANCH=-s dev" >> $GITHUB_ENV  ;;
                 "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
@@ -400,6 +400,8 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
           #   echo "Applying SUSFS patches for KernelSU-Next..."
              cd ./KernelSU-Next
+             cp ${{github.workspace}}/kernel_patches/wild/ksun-0daf55582-susfs-v2.1.0-e259e7d6.patch ./
+             patch -p1 < ksun-0daf55582-susfs-v2.1.0-e259e7d6.patch
           #   curl -LSs https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/dev/0001-kernel-patch-susfs-v1.5.7-to-KernelSU-Next-v1.0.7.patch -o susfs.patch 
           #   patch -p1 --forward < susfs.patch
 
