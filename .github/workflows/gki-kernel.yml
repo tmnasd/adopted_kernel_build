@@ -367,9 +367,8 @@ jobs:
 
           if [ -d "Baseband-guard" ]; then
             echo "Existing Baseband-Guard detected. Updating to latest..."
-            cd Baseband-guard
-            chmod +x ./setup.sh
-            ./setup.sh --cleanup
+            chmod +x ./Baseband-guard/setup.sh
+            ./Baseband-guard/setup.sh --cleanup
           fi
           
           echo "Setting up Baseband-Guard"
