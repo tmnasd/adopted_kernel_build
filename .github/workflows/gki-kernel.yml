@@ -378,17 +378,17 @@ jobs:
           
           if [[ "$HAS_BBG" == "false" ]]; then
             echo "Enable Baseband-Guard in defconfig"
-            CONFIG_FILE="arch/arm64/configs/rodin_defconfig"
+            CONFIG_FILE="arch/arm64/configs/$DEFCONFIG"
             echo "CONFIG_BBG=y" >> "$CONFIG_FILE"
           
             # 对于 GitHub Actions 云编译，修改 LSM Kconfig
             echo "Modify security/Kconfig to include baseband_guard..."
             sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
 
-            sed -i '/^CONFIG_LSM=/s/"$/,baseband_guard"/' arch/arm64/configs/rodin_defconfig
+            sed -i '/^CONFIG_LSM=/s/"$/,baseband_guard"/' arch/arm64/configs/$DEFCONFIG
           fi
           # Verify changes
-          grep "CONFIG_LSM=" arch/arm64/configs/rodin_defconfig
+          grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG
           echo "Setup completed"
           
       - name: Enable susfs4ksu in ksu
