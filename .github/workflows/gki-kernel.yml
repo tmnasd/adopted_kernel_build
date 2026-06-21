@@ -391,15 +391,7 @@ jobs:
           grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG
           echo "Setup completed"
 
-      - name: Apply NoMount VFS kernel patch
-        if: ${{ inputs.nomount_support }}
-        run: |
-          cd "$CONFIG"
-          git clone https://github.com/maxsteeel/nomount.git
-          cp ./nomount/kernel/src/* ./common/fs
-          cp ./nomount/kernel/patches/nomount_6.6_kernel_integration.patch ./common/
-          cd common
-          patch -p1 < nomount_6.6_kernel_integration.patch
+      
       - name: Enable susfs4ksu in ksu
         if: ${{ inputs.use_susfs }}
         run: |
@@ -535,7 +527,15 @@ jobs:
           cd "$CONFIG/common"
           patch -p1 < unicode_bypass_fix_6.1+.patch
       
-          
+      - name: Apply NoMount VFS kernel patch
+        if: ${{ inputs.nomount_support }}
+        run: |
+          cd "$CONFIG"
+          git clone https://github.com/maxsteeel/nomount.git
+          cp ./nomount/kernel/src/* ./common/fs
+          cp ./nomount/kernel/patches/nomount_6.6_kernel_integration.patch ./common/
+          cd common
+          patch -p1 < nomount_6.6_kernel_integration.patch
       - name: Apply ZeroMount VFS kernel patch
         if: ${{ inputs.use_zeromount }}
         run: |
