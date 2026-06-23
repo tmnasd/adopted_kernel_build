@@ -35,6 +35,14 @@ on:
         description: 'Adds support for NoMount metamodule'
         required: true
         type: boolean
+      max_build_space:
+        description: 'Maximize build space (should free around 30gb). Recommended if you need to use swap file'
+        required: true
+        type: boolean
+      use_swap:
+        description: 'Use swap file to extend available ram'
+        required: true
+        type: boolean
       custom_kernel_source:
         required: false
         type: string
@@ -84,9 +92,11 @@ jobs:
       custom_kernel_source: ${{ inputs.custom_kernel_source || 'rodin' }}
       custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}
       apply_hide_stuff: ${{ inputs.apply_hide_stuff  }}
-      use_ccache: ${{ inputs.use_ccache }}
+      use_ccache: ${{ inputs.use_ccache }}  
       use_susfs: ${{ inputs.use_susfs }}
       use_enhanced_susfs: ${{ inputs.use_enhanced_susfs }}
       use_superbuilders_susfs: ${{ inputs.use_superbuilders_susfs }}
       use_zeromount: ${{ inputs.use_zeromount }}
       defconfig_name: ${{ inputs.defconfig_name }}
+      max_build_space: ${{ inputs.max_build_space }}
+      use_swap: ${{ inputs.use_swap }}
