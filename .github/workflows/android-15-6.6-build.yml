@@ -84,6 +84,16 @@ on:
         required: false
         type: boolean
         default: true
+      max_build_space:
+        description: 'Maximize build space (should free around 30gb). Recommended if you need to use swap file'
+        required: true
+        type: boolean
+        default: false
+      use_swap:
+        description: 'Use swap file to extend available ram'
+        required: true
+        type: boolean
+        default: false
       custom_kernel_source:
         description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
         required: false
@@ -127,3 +137,5 @@ jobs:
       use_superbuilders_susfs: ${{ inputs.use_superbuilders_susfs }}
       use_zeromount: ${{ inputs.use_zeromount }}
       defconfig_name: ${{ inputs.defconfig_name }}
+      max_build_space: ${{ inputs.max_build_space }}
+      use_swap: ${{ inputs.use_swap }}
