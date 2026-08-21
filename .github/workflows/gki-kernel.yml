@@ -386,6 +386,12 @@ jobs:
             curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
           fi
 
+      - name: Fix Kbuild Symlink
+        if: ${{ inputs.kernelsu_variant == 'Next' }}
+        run: |
+          cd "$CONFIG"
+          sed -i 's/cd $(srctree)\/$(src)/cd -P $(srctree)\/$(src)/g' KernelSU-Next/kernel/Kbuild
+
       - name: Add Baseband-guard support
         if: ${{ inputs.BBG }}
         run: |
