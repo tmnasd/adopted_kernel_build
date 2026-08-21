@@ -98,7 +98,7 @@ on:
         description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
         required: false
         type: string
-        default: 'https://github.com/KyunLFA/smol-rodin-kernel.git -b no-root --depth 1'
+        default: 'https://github.com/tmnasd/smol-rodin-recloned.git --depth 1'
       defconfig_name:
         description: "Specify defconfig name to use to compile kernel source. Must exist in ./arch/arm64/configs"
         required: true
