@@ -323,12 +323,12 @@ jobs:
               ;;
             "Dev")
               case "$variant_input" in
-                "Official" | "MKSU") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
+                "MKSU") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
                 "SukiSU")            echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
                 "WKSU")              echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
                 "MamboSU")           echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
                 "Next")              echo "BRANCH=-s dev-susfs" >> $GITHUB_ENV  ;;
-                "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "Official" | "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
