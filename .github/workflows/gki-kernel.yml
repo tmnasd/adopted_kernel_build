@@ -389,8 +389,8 @@ jobs:
       - name: Fix Kbuild Symlink
         if: ${{ inputs.kernelsu_variant == 'Next' }}
         run: |
-          cd "$CONFIG"
-          sed -i 's/cd $(srctree)\/$(src)/cd -P $(srctree)\/$(src)/g' "$CONFIG/KernelSU-Next/kernel/Kbuild"
+          cd "$CONFIG/KernelSU-Next/kernel"
+          sed -i 's/cd $(srctree)\/$(src)/cd -P $(srctree)\/$(src)/g' Kbuild
 
       - name: Add Baseband-guard support
         if: ${{ inputs.BBG }}
