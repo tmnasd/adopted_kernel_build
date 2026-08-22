@@ -1,5 +1,5 @@
 name: Build A15-6.6
-run-name: run-name: Build A15-6.6 - KSU: ${{ inputs.kernelsu_variant }} | SUSFS: ${{ inputs.use_susfs }} | NoMount: ${{ inputs.nomount_support }}
+run-name: Build A15-6.6 - KSU: ${{ inputs.kernelsu_variant }} | SUSFS: ${{ inputs.use_susfs }} | NoMount: ${{ inputs.nomount_support }}
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
