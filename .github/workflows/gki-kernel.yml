@@ -284,9 +284,9 @@ jobs:
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
         with:
           depth: 1
-          branch: 'rodin-gpu'
+          branch: 'main'
           owner: 'tmnasd'
-          repository: 'kernel_xiaomi_rodin'
+          repository: 'smol-rodin-kernel-021'
           access-token: ${{ secrets.ACCESS_TOKEN }}
         #run: |
         #  cd "$CONFIG"
