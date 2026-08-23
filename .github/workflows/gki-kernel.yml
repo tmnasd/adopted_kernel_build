@@ -281,13 +281,9 @@ jobs:
             kernel-ccache-${{ hashFiles('kernel_url.txt') }}
       - name: Clone rodin source
         if: ${{ inputs.custom_kernel_source == 'rodin' }}
-        uses: GuillaumeFalourd/clone-github-repo-action@v2.3
-        with:
-          depth: 1
-          branch: 'main'
-          owner: 'tmnasd'
-          repository: 'smol-rodin-kernel-021'
-          access-token: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          cd "$CONFIG"
+          git clone --depth 1 https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com/tmnasd/smol-rodin-kernel-021.git common
         #run: |
         #  cd "$CONFIG"
         #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
@@ -296,10 +292,10 @@ jobs:
       - name: Clone custom source
         if: ${{ inputs.custom_kernel_source != 'rodin' }}
         run: |
-          git clone ${{  inputs.custom_kernel_source  }} kernel_xiaomi_rodin
-      - name: Move to common
+          cd "$CONFIG"
+          git clone ${{  inputs.custom_kernel_source  }} common
+      - name: Add build script
         run: |
-          mv kernel_xiaomi_rodin $CONFIG/common
           echo "Adding build script..."
           mv build_kernel.sh $CONFIG/common
       
