@@ -281,13 +281,9 @@ jobs:
             kernel-ccache-${{ hashFiles('kernel_url.txt') }}
       - name: Clone rodin source
         if: ${{ inputs.custom_kernel_source == 'rodin' }}
-        uses: GuillaumeFalourd/clone-github-repo-action@v2.3
-        with:
-          depth: 1
-          branch: 'rodin-gpu'
-          owner: 'tmnasd'
-          repository: 'kernel_xiaomi_rodin'
-          access-token: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          cd "$CONFIG"
+          git clone --depth 1 https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com/tmnasd/smol-rodin-kernel-021.git common
         #run: |
         #  cd "$CONFIG"
         #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
@@ -296,10 +292,10 @@ jobs:
       - name: Clone custom source
         if: ${{ inputs.custom_kernel_source != 'rodin' }}
         run: |
-          git clone ${{  inputs.custom_kernel_source  }} kernel_xiaomi_rodin
-      - name: Move to common
+          cd "$CONFIG"
+          git clone ${{  inputs.custom_kernel_source  }} common
+      - name: Add build script
         run: |
-          mv kernel_xiaomi_rodin $CONFIG/common
           echo "Adding build script..."
           mv build_kernel.sh $CONFIG/common
       
@@ -312,9 +308,9 @@ jobs:
             "Stable")
               case "$variant_input" in
                 "Official" | "MKSU" | "ReSukiSU") echo "BRANCH=-s main" >> $GITHUB_ENV ;;
-                "Next" | "WKSU")      echo "BRANCH=-s stable" >> $GITHUB_ENV ;;
-                "SukiSU")           echo "BRANCH=-s main" >> $GITHUB_ENV ;;
-                "MamboSU")          echo "BRANCH=-s master" >> $GITHUB_ENV ;;
+                "Next" | "WKSU")                  echo "BRANCH=-s stable" >> $GITHUB_ENV ;;
+                "SukiSU")                         echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "MamboSU" | "KowSU")              echo "BRANCH=-s master" >> $GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -323,12 +319,13 @@ jobs:
               ;;
             "Dev")
               case "$variant_input" in
-                "Official" | "MKSU") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
-                "SukiSU")            echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
-                "WKSU")              echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
-                "MamboSU")           echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
-                "Next")              echo "BRANCH=-s dev-susfs" >> $GITHUB_ENV  ;;
-                "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "MKSU") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
+                "SukiSU")                         echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
+                "WKSU")                           echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
+                "MamboSU")                        echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
+                "Next")                           echo "BRANCH=-s dev-susfs" >> $GITHUB_ENV  ;;
+                "Official" | "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "KowSU")                          echo "BRANCH=-s master" >> $GITHUB_ENV ;;
                 *) 
                   echo "Invalid choice '$variant_input'" >&2
                   exit 1
@@ -384,6 +381,13 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             echo "Adding ReSukiSU..."
             curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
+           elif [ "${{ inputs.kernelsu_variant }}" == "KowSU" ]; then
+            echo "Adding KowSU..."
+            curl -LSs "https://raw.githubusercontent.com/KOWX712/KernelSU/refs/heads/master/kernel/setup.sh" | bash $BRANCH
+            git clone https://github.com/midori01/gki_ksu_workflow.git
+            cp ./gki_ksu_workflow/.github/patches/24_extra_features_for_ksu.patch ./KernelSU/
+            cd KernelSU
+            patch -p1 --forward < 24_extra_features_for_ksu.patch
           fi
 
       - name: Add Baseband-guard support
@@ -476,6 +480,11 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             echo "Looks like ReSukiSU doesn't need any additional patches. Skipping for now..."
             cd ./KernelSU
+          elif [ "${{ inputs.kernelsu_variant }}" == "KowSU" ]; then
+            echo "Adding susfs4ksu support for KowSU"
+            cp ./gki_ksu_workflow/.github/patches/10_enable_susfs_for_ksu.patch ./KernelSU/
+            cd KernelSU
+            patch -p1 --forward < 10_enable_susfs_for_ksu.patch
           else
             echo "Invalid KernelSU variant selected!"
             exit 1

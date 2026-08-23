@@ -1,4 +1,5 @@
 name: Build A15-6.6
+run-name: "Build A15-6.6 - KSU: ${{ inputs.kernelsu_variant }} | SUSFS: ${{ inputs.use_susfs }} | NoMount: ${{ inputs.nomount_support }}"
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -14,11 +15,12 @@ on:
         options:
           - Official
           - Next
+          - KowSU
+          - ReSukiSU
+          - MamboSU
           - MKSU
           - SukiSU
           - WKSU
-          - MamboSU
-          - ReSukiSU
         default: Next
       kernelsu_branch:
         description: "KSU Branch"
@@ -98,7 +100,7 @@ on:
         description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
         required: false
         type: string
-        default: 'https://github.com/KyunLFA/smol-rodin-kernel.git -b no-root --depth 1'
+        default: 'https://github.com/tmnasd/smol-rodin-recloned.git --depth 1'
       defconfig_name:
         description: "Specify defconfig name to use to compile kernel source. Must exist in ./arch/arm64/configs"
         required: true
