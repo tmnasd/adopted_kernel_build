@@ -31,10 +31,6 @@ on:
         description: 'Add BBG？'
         required: true
         type: boolean
-      nomount_support:
-        description: 'Adds support for NoMount metamodule'
-        required: true
-        type: boolean
       max_build_space:
         description: 'Maximize build space (should free around 30gb). Recommended if you need to use swap file'
         required: true
@@ -88,7 +84,6 @@ jobs:
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
       BBG: ${{ inputs.BBG || false }}
-      nomount_support: ${{ inputs.nomount_support || false }}
       custom_kernel_source: ${{ inputs.custom_kernel_source || 'rodin' }}
       custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}
       apply_hide_stuff: ${{ inputs.apply_hide_stuff  }}
