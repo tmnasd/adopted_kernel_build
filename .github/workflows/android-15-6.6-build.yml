@@ -1,5 +1,5 @@
 name: Build A15-6.6
-run-name: "Build A15-6.6 - KSU: ${{ inputs.kernelsu_variant }} | SUSFS: ${{ inputs.use_susfs }} | NoMount: ${{ inputs.nomount_support }}"
+run-name: "Build A15-6.6 - KSU: ${{ inputs.kernelsu_variant }} | SUSFS: ${{ inputs.use_susfs }}"
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -66,13 +66,8 @@ on:
         required: true
         type: boolean
         default: true
-      nomount_support:
-        description: "Enable NoMount VFS driver"
-        required: true
-        type: boolean
-        default: false
       use_zeromount:
-        description: "Enable ZeroMount VFS driver (do not enable both NoMount & ZeroMount)"
+        description: "Enable ZeroMount VFS driver"
         required: true
         type: boolean
         default: false
@@ -100,7 +95,7 @@ on:
         description: "Compile kernel from another source instead of rodin source. Use rodin if you want to use rodin src"
         required: false
         type: string
-        default: 'https://github.com/tmnasd/smol-rodin-recloned.git --depth 1'
+        default: 'https://github.com/tmnasd/smol-rodin-kernel.git --depth 1'
       defconfig_name:
         description: "Specify defconfig name to use to compile kernel source. Must exist in ./arch/arm64/configs"
         required: true
@@ -127,7 +122,6 @@ jobs:
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
       BBG: ${{ inputs.BBG }}
-      nomount_support: ${{ inputs.nomount_support }}
       clang_custom_link: ${{ inputs.clang_custom_link }}
       kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash }}
       custom_kernel_source: ${{ inputs.custom_kernel_source }}
