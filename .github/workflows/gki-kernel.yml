@@ -384,6 +384,7 @@ jobs:
             cp ./gki_ksu_workflow/.github/patches/24_extra_features_for_ksu.patch ./KernelSU/
             cd KernelSU
             patch -p1 --forward < 24_extra_features_for_ksu.patch
+            
           fi
 
       - name: Add Baseband-guard support
@@ -478,9 +479,8 @@ jobs:
             cd ./KernelSU
           elif [ "${{ inputs.kernelsu_variant }}" == "KowSU" ]; then
             echo "Adding susfs4ksu support for KowSU"
-            cp ./gki_ksu_workflow/.github/patches/10_enable_susfs_for_ksu.patch ./KernelSU/
             cd KernelSU
-            patch -p1 --forward < 10_enable_susfs_for_ksu.patch
+            patch -p1 < <(curl -sL "https://github.com/midori01/KernelSU/commit/kow.patch")
           else
             echo "Invalid KernelSU variant selected!"
             exit 1
