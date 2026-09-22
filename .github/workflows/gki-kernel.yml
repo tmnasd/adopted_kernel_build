@@ -452,6 +452,7 @@ jobs:
             echo "Enable Baseband-Guard in defconfig"
             CONFIG_FILE="arch/arm64/configs/$DEFCONFIG"
             echo "CONFIG_BBG=y" >> "$CONFIG_FILE"
+            echo "CONFIG_LSM=\"landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,bpf,baseband_guard\"" >> "$CONFIG_FILE"
           
             # 对于 GitHub Actions 云编译，修改 LSM Kconfig
             echo "Modify security/Kconfig to include baseband_guard..."
@@ -460,7 +461,10 @@ jobs:
             sed -i '/^CONFIG_LSM=/s/"$/,baseband_guard"/' arch/arm64/configs/$DEFCONFIG
           fi
           # Verify changes
-          grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG
+          if ! grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG; then
+              echo "CONFIG_LSM=\"landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,bpf,baseband_guard\"" >> "$CONFIG_FILE"
+          fi
+          
           echo "Setup completed"
 
       
