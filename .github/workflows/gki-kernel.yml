@@ -621,11 +621,12 @@ jobs:
           fi
           cd "$CONFIG/common"
           patch -p1 --fuzz=3 < 60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch
-      - name: Add SUSFS & KSU into defconfig
+      - name: Add SUSFS & KSU into defconfig - Legacy Build.sh
+        if: ${{ !inputs.use_bazel }}
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG"
-          echo "Adding configuration settings to rodin_defconfig..."
+          echo "Adding configuration settings to defconfig..."
 
           # Add KSU configuration settings
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/$DEFCONFIG
@@ -691,6 +692,120 @@ jobs:
           
           # Remove check_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
+        
+        
+      - name: Add SUSFS & KSU into defconfig - Bazel
+        if: ${{ inputs.use_bazel }}
+        run: |
+          echo "Current Working Dir: $CONFIG..."
+          cd "$CONFIG"
+          echo "Adding configuration settings to defconfig..."
+
+		  CONFIG_FILE="./common/arch/arm64/configs/$DEFCONFIG"
+		  CONFIG_TOOL="./common/scripts/config"
+
+		  # Helper for editing kernel config safely.
+		  # Use bash explicitly so this does not depend on executable bit.
+		  kconfig() {
+		    bash "$CONFIG_TOOL" --file "$CONFIG_FILE" "$@"
+		  }
+
+		  # ============================================================
+		  # KernelSU
+		  # ============================================================
+
+		  kconfig -e KSU
+
+		  case "${{ inputs.kernelsu_variant }}" in
+		    "Next")
+		  	kconfig \
+		  	  -d KSU_KPROBES_HOOK \
+		  	  -d KSU_SUSFS_SUS_SU
+		  	;;
+
+		    "SukiSU")
+		  	kconfig \
+		  	  -e KPM \
+		  	  -d KSU_SUSFS_SUS_SU
+		  	;;
+
+		    "MKSU")
+		  	kconfig \
+		  	  -d KSU_SUSFS_SUS_SU
+		  	;;
+		  esac
+
+		  # ============================================================
+		  # TMPFS
+		  # ============================================================
+
+		  kconfig \
+		    -e TMPFS_XATTR \
+		    -e TMPFS_POSIX_ACL
+
+		  # ============================================================
+		  # Netfilter
+		  # ============================================================
+
+		  kconfig \
+		    -e IP_NF_TARGET_TTL \
+		    -e IP6_NF_TARGET_HL \
+		    -e IP6_NF_MATCH_HL
+
+		  # ============================================================
+		  # BBR
+		  # ============================================================
+
+		  kconfig \
+		    -e TCP_CONG_ADVANCED \
+		    -e TCP_CONG_BBR \
+		    -e NET_SCH_FQ \
+		    -d TCP_CONG_BIC \
+		    -d TCP_CONG_WESTWOOD \
+		    -d TCP_CONG_HTCP
+
+		  # ============================================================
+		  # SUSFS
+		  # ============================================================
+
+		  if [ "${{ inputs.use_susfs }}" = "true" ]; then
+		    kconfig \
+		  	-e KSU_SUSFS \
+		  	-e KSU_SUSFS_SUS_MAP \
+		  	-e KSU_SUSFS_SUS_PATH \
+		  	-e KSU_SUSFS_SUS_MOUNT \
+		  	-e KSU_SUSFS_SUS_KSTAT \
+		  	-e KSU_SUSFS_SPOOF_UNAME \
+		  	-e KSU_SUSFS_ENABLE_LOG \
+		  	-e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+		  	-e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+		  	-e KSU_SUSFS_OPEN_REDIRECT
+
+		    # Enhanced SUSFS
+		    if [ "${{ inputs.use_enhanced_susfs }}" = "true" ]; then
+		  	kconfig \
+		  	  -e KSU_SUSFS_SUS_KSTAT_REDIRECT \
+		  	  -e KSU_SUSFS_UNICODE_FILTER \
+		  	  -e KSU_SUSFS_HIDDEN_NAME \
+		  	  -e KSU_SUSFS_HARDENED
+		    fi
+		  fi
+
+		  # ============================================================
+		  # NoMount
+		  # ============================================================
+
+		  if [ "${{ inputs.nomount_support }}" = "true" ]; then
+		    kconfig -e NOMOUNT
+		  fi
+
+		  # ============================================================
+		  # ZeroMount
+		  # ============================================================
+
+		  if [ "${{ inputs.use_zeromount }}" = "true" ]; then
+		    kconfig -e ZEROMOUNT
+		  fi
 
       - name: Build with retry
         uses: nick-fields/retry@v3
