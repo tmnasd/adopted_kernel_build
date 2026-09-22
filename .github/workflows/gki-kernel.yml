@@ -701,111 +701,111 @@ jobs:
           cd "$CONFIG"
           echo "Adding configuration settings to defconfig..."
 
-		  CONFIG_FILE="./common/arch/arm64/configs/$DEFCONFIG"
-		  CONFIG_TOOL="./common/scripts/config"
+          CONFIG_FILE="./common/arch/arm64/configs/$DEFCONFIG"
+          CONFIG_TOOL="./common/scripts/config"
 
-		  # Helper for editing kernel config safely.
-		  # Use bash explicitly so this does not depend on executable bit.
-		  kconfig() {
-		    bash "$CONFIG_TOOL" --file "$CONFIG_FILE" "$@"
-		  }
+          # Helper for editing kernel config safely.
+          # Use bash explicitly so this does not depend on executable bit.
+          kconfig() {
+            bash "$CONFIG_TOOL" --file "$CONFIG_FILE" "$@"
+          }
 
-		  # ============================================================
-		  # KernelSU
-		  # ============================================================
+          # ============================================================
+          # KernelSU
+          # ============================================================
 
-		  kconfig -e KSU
+          kconfig -e KSU
 
-		  case "${{ inputs.kernelsu_variant }}" in
-		    "Next")
-		  	kconfig \
-		  	  -d KSU_KPROBES_HOOK \
-		  	  -d KSU_SUSFS_SUS_SU
-		  	;;
+          case "${{ inputs.kernelsu_variant }}" in
+            "Next")
+          	kconfig \
+          	  -d KSU_KPROBES_HOOK \
+          	  -d KSU_SUSFS_SUS_SU
+          	;;
 
-		    "SukiSU")
-		  	kconfig \
-		  	  -e KPM \
-		  	  -d KSU_SUSFS_SUS_SU
-		  	;;
+            "SukiSU")
+          	kconfig \
+          	  -e KPM \
+          	  -d KSU_SUSFS_SUS_SU
+          	;;
 
-		    "MKSU")
-		  	kconfig \
-		  	  -d KSU_SUSFS_SUS_SU
-		  	;;
-		  esac
+            "MKSU")
+          	kconfig \
+          	  -d KSU_SUSFS_SUS_SU
+          	;;
+          esac
 
-		  # ============================================================
-		  # TMPFS
-		  # ============================================================
+          # ============================================================
+          # TMPFS
+          # ============================================================
 
-		  kconfig \
-		    -e TMPFS_XATTR \
-		    -e TMPFS_POSIX_ACL
+          kconfig \
+            -e TMPFS_XATTR \
+            -e TMPFS_POSIX_ACL
 
-		  # ============================================================
-		  # Netfilter
-		  # ============================================================
+          # ============================================================
+          # Netfilter
+          # ============================================================
 
-		  kconfig \
-		    -e IP_NF_TARGET_TTL \
-		    -e IP6_NF_TARGET_HL \
-		    -e IP6_NF_MATCH_HL
+          kconfig \
+            -e IP_NF_TARGET_TTL \
+            -e IP6_NF_TARGET_HL \
+            -e IP6_NF_MATCH_HL
 
-		  # ============================================================
-		  # BBR
-		  # ============================================================
+          # ============================================================
+          # BBR
+          # ============================================================
 
-		  kconfig \
-		    -e TCP_CONG_ADVANCED \
-		    -e TCP_CONG_BBR \
-		    -e NET_SCH_FQ \
-		    -d TCP_CONG_BIC \
-		    -d TCP_CONG_WESTWOOD \
-		    -d TCP_CONG_HTCP
+          kconfig \
+            -e TCP_CONG_ADVANCED \
+            -e TCP_CONG_BBR \
+            -e NET_SCH_FQ \
+            -d TCP_CONG_BIC \
+            -d TCP_CONG_WESTWOOD \
+            -d TCP_CONG_HTCP
 
-		  # ============================================================
-		  # SUSFS
-		  # ============================================================
+          # ============================================================
+          # SUSFS
+          # ============================================================
 
-		  if [ "${{ inputs.use_susfs }}" = "true" ]; then
-		    kconfig \
-		  	-e KSU_SUSFS \
-		  	-e KSU_SUSFS_SUS_MAP \
-		  	-e KSU_SUSFS_SUS_PATH \
-		  	-e KSU_SUSFS_SUS_MOUNT \
-		  	-e KSU_SUSFS_SUS_KSTAT \
-		  	-e KSU_SUSFS_SPOOF_UNAME \
-		  	-e KSU_SUSFS_ENABLE_LOG \
-		  	-e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
-		  	-e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-		  	-e KSU_SUSFS_OPEN_REDIRECT
+          if [ "${{ inputs.use_susfs }}" = "true" ]; then
+            kconfig \
+          	-e KSU_SUSFS \
+          	-e KSU_SUSFS_SUS_MAP \
+          	-e KSU_SUSFS_SUS_PATH \
+          	-e KSU_SUSFS_SUS_MOUNT \
+          	-e KSU_SUSFS_SUS_KSTAT \
+          	-e KSU_SUSFS_SPOOF_UNAME \
+          	-e KSU_SUSFS_ENABLE_LOG \
+          	-e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+          	-e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+          	-e KSU_SUSFS_OPEN_REDIRECT
 
-		    # Enhanced SUSFS
-		    if [ "${{ inputs.use_enhanced_susfs }}" = "true" ]; then
-		  	kconfig \
-		  	  -e KSU_SUSFS_SUS_KSTAT_REDIRECT \
-		  	  -e KSU_SUSFS_UNICODE_FILTER \
-		  	  -e KSU_SUSFS_HIDDEN_NAME \
-		  	  -e KSU_SUSFS_HARDENED
-		    fi
-		  fi
+            # Enhanced SUSFS
+            if [ "${{ inputs.use_enhanced_susfs }}" = "true" ]; then
+          	kconfig \
+          	  -e KSU_SUSFS_SUS_KSTAT_REDIRECT \
+          	  -e KSU_SUSFS_UNICODE_FILTER \
+          	  -e KSU_SUSFS_HIDDEN_NAME \
+          	  -e KSU_SUSFS_HARDENED
+            fi
+          fi
 
-		  # ============================================================
-		  # NoMount
-		  # ============================================================
+          # ============================================================
+          # NoMount
+          # ============================================================
 
-		  if [ "${{ inputs.nomount_support }}" = "true" ]; then
-		    kconfig -e NOMOUNT
-		  fi
+          if [ "${{ inputs.nomount_support }}" = "true" ]; then
+            kconfig -e NOMOUNT
+          fi
 
-		  # ============================================================
-		  # ZeroMount
-		  # ============================================================
+          # ============================================================
+          # ZeroMount
+          # ============================================================
 
-		  if [ "${{ inputs.use_zeromount }}" = "true" ]; then
-		    kconfig -e ZEROMOUNT
-		  fi
+          if [ "${{ inputs.use_zeromount }}" = "true" ]; then
+            kconfig -e ZEROMOUNT
+          fi
 
       - name: Build with retry
         uses: nick-fields/retry@v3
