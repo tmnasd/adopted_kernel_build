@@ -71,11 +71,6 @@ on:
         required: true
         type: boolean
         default: false
-      apply_hide_stuff:
-        description: "Apply additional hiding patches (see WildKernels/kernel_patches for more info). Disable this if you're having compilation issues"
-        required: false
-        type: boolean
-        default: false
       use_ccache:
         description: "Use CCache to cache the compilation result. This helps speed up later compile session, but requires a supported build script"
         required: false
@@ -112,22 +107,41 @@ on:
         required: true
         type: string
         default: https://github.com/ZyCromerZ/Clang/releases/download/23.0.0git-20260129-release/Clang-23.0.0git-20260129.tar.gz
+        
+      use_bazel:
+        description: "Use Bazel to build the kernel"
+        required: true
+        type: boolean
+        default: false
+      bazel_dist:
+        description: "Bazel dist target. Skip if you don't use bazel"
+        required: false
+        type: string
+        default: "//common:kernel_aarch64_dist"
+      bazel_args:
+        description: "Bazel custom args. Can skip"
+        required: false
+        type: string
+        default: ""
 jobs:
- build-kernel-a15-6-6:
-    uses: ./.github/workflows/kernel-a15-6.6.yml
+  build-kernel-a15-6-6-kernelsu-susfs:
+    strategy:
+      fail-fast: false
+    uses: ./.github/workflows/gki-kernel.yml
     secrets: inherit
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
+      clang_custom_link: ${{ inputs.clang_custom_link || 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz' }}
+      android_version: "android15"
+      kernel_version: "6.6"
+      kernelsu_variant: ${{ inputs.kernelsu_variant || 'Next' }}
+      kernelsu_branch: ${{ inputs.kernelsu_branch || 'Dev' }}
+      kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash || 'latest' }}
       use_zram: ${{ inputs.use_zram }}
       use_kpm: ${{ inputs.use_kpm }}
-      BBG: ${{ inputs.BBG }}
-      clang_custom_link: ${{ inputs.clang_custom_link }}
-      kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash }}
-      custom_kernel_source: ${{ inputs.custom_kernel_source }}
-      custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash }}
-      apply_hide_stuff: ${{ inputs.apply_hide_stuff }}
-      use_ccache: ${{ inputs.use_ccache }}
+      BBG: ${{ inputs.BBG || false }}
+      custom_kernel_source: ${{ inputs.custom_kernel_source || 'rodin' }}
+      custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}
+      use_ccache: ${{ inputs.use_ccache }}  
       use_susfs: ${{ inputs.use_susfs }}
       use_enhanced_susfs: ${{ inputs.use_enhanced_susfs }}
       use_superbuilders_susfs: ${{ inputs.use_superbuilders_susfs }}
@@ -135,3 +149,5 @@ jobs:
       defconfig_name: ${{ inputs.defconfig_name }}
       max_build_space: ${{ inputs.max_build_space }}
       use_swap: ${{ inputs.use_swap }}
+      use_bazel: ${{ inputs.use_bazel }}
+      bazel_dist: ${{ inputs.bazel_dist }}

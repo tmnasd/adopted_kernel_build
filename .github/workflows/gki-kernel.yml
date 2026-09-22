@@ -47,10 +47,6 @@ on:
         required: false
         type: string
         default: latest
-      apply_hide_stuff:
-        required: false
-        type: boolean
-        default: true
       use_ccache:
         required: false
         type: boolean
@@ -81,6 +77,16 @@ on:
       use_swap:
         type: boolean
         default: false
+      use_bazel:
+        type: boolean
+        default: false
+      bazel_dist:
+        type: string
+        defualt: "//common:kernel_aarch64_dist"
+      bazel_args:
+        type: string
+        default: ""
+        
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-latest
@@ -122,15 +128,25 @@ jobs:
           COMPILE_ARGS="${{ format('{0}{1}{2}{3}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
           echo "COMPILE_ARGS=$COMPILE_ARGS" >> $GITHUB_ENV
           echo "Compile arg set to: $COMPILE_ARGS"
+          BUILD_LABEL="${{ format('{0}{1}{2}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '') }}"
+          echo "BUILD_LABEL=$BUILD_LABEL" >> $GITHUB_ENV
+          echo "Build label set to: $BUILD_LABEL"
 
           echo "DEFCONFIG=${{ inputs.defconfig_name }}" >> $GITHUB_ENV
           echo "Defconfig set to: $DEFCONFIG"
+          
+          echo "KERNEL_VERSION=${{ inputs.kernel_version }}" >> $GITHUB_ENV
+          echo "BUILD_WITH_BAZEL=${{ inputs.use_bazel }}" >> $GITHUB_ENV
+          echo "BAZEL_TARGET=${{ inputs.bazel_dist }}" >> $GITHUB_ENV
+          echo "BAZEL_ARGS=${{ inputs.bazel_args }}" >> $GITHUB_ENV
+          echo "ARTIFACT_DIR=$GITHUB_WORKSPACE/artifacts" >> $GITHUB_ENV
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
       - name: Install ccache
-        if: ${{ inputs.use_ccache }}
+        if: ${{ inputs.use_ccache && !inputs.build_with_bazel }}
         run: sudo apt update && sudo apt upgrade -y && sudo apt install -y ccache python3 git curl
 
       - name: Configure CCache
-        if: ${{ inputs.use_ccache }}
+        if: ${{ inputs.use_ccache && !inputs.build_with_bazel }}
         run: |
           export CCACHE_DIR="$HOME/.ccache"
           mkdir -p "$CCACHE_DIR"
@@ -157,15 +173,17 @@ jobs:
           KERNEL_ROOT="$GITHUB_WORKSPACE/$CONFIG"
           echo "KERNEL_ROOT=$KERNEL_ROOT" >> $GITHUB_ENV
       - name: Generate Toolchain Key
-        run: echo "${{ github.event.inputs.clang_custom_link }}" > clang_url.txt
+        if: ${{ !inputs.build_with_bazel }}
+        run: echo "${{ inputs.clang_custom_link }}" > clang_url.txt
       - name: Cache AOSP Clang
+        if: ${{ !inputs.build_with_bazel }}
         id: cache-clang
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/${{ inputs.android_version }}-${{ inputs.kernel_version }}/toolchains/clang  # The directory where you install clang
           key: clang-${{ hashFiles('clang_url.txt') }}
       - name: Download AOSP Clang
-        if: steps.cache-clang.outputs.cache-hit != 'true'
+        if: ${{ !inputs.build_with_bazel && steps.cache-clang.outputs.cache-hit != 'true' }}
         run: |
           # Create a directory for Clang
           mkdir -p $CONFIG/toolchains/clang
@@ -180,9 +198,11 @@ jobs:
           # Clean up the tarball to save disk space
           rm clang.tar.gz
       - name: Install AOSP Clang
+        if: ${{ !inputs.build_with_bazel }}
         run: echo "$CONFIG/toolchains/clang/bin" >> $GITHUB_PATH
 
       - name: Verify Clang Installation
+        if: ${{ !inputs.build_with_bazel }}
         run: |
           clang --version
       
@@ -193,6 +213,24 @@ jobs:
           curl https://storage.googleapis.com/git-repo-downloads/repo > ./git-repo/repo
           chmod a+rx ./git-repo/repo
           echo "REPO=$GITHUB_WORKSPACE/./git-repo/repo" >> $GITHUB_ENV
+
+      - name: Prepare Kleaf workspace
+        if: ${{ inputs.build_with_bazel }}
+        run: |
+          set -euo pipefail
+          cd "$CONFIG"
+
+          MANIFEST_BRANCH="common-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+
+          echo "Using kernel manifest branch: $MANIFEST_BRANCH"
+          "$REPO" init \
+            -u https://android.googlesource.com/kernel/manifest \
+            -b "$MANIFEST_BRANCH" \
+            --depth=1
+          "$REPO" sync -c --no-tags --no-clone-bundle -j"$(nproc)"
+
+          # common/ will be replaced by the selected custom kernel source below.
+          rm -rf common
 
       - name: Clone AnyKernel3 & Kernel patches
         run: |
@@ -265,10 +303,10 @@ jobs:
           echo "CONFIG set to: $CONFIG"
 
       - name: Generate Kernel Source Key
-        if: ${{ inputs.use_ccache }}
+        if: ${{ inputs.use_ccache && !inputs.build_with_bazel }}
         run: echo "${{ github.event.inputs.custom_kernel_source }}" > kernel_url.txt
       - name: Cache CCache
-        if: ${{ inputs.use_ccache }}
+        if: ${{ inputs.use_ccache && !inputs.build_with_bazel }}
         uses: actions/cache@v4
         with:
           path: ~/.ccache
@@ -285,6 +323,28 @@ jobs:
         #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
         #  mv capybara-aosp-gki common
         #  ls -a
+        
+      - name: Prepare Bazel disk cache key
+        if: ${{ inputs.build_with_bazel && inputs.use_ccache }}
+        run: |
+          set -euo pipefail
+          SOURCE_REV="$(git -C "$CONFIG/common" rev-parse HEAD)"
+          printf '%s\n' \
+            "$SOURCE_REV" \
+            "${{ inputs.android_version }}" \
+            "${{ inputs.kernel_version }}" \
+            "${{ inputs.bazel_target }}" > bazel_cache_key.txt
+          echo "BAZEL_DISK_CACHE_DIR=$HOME/.cache/kleaf-bazel" >> "$GITHUB_ENV"
+
+      - name: Cache Bazel/Kleaf build cache
+        if: ${{ inputs.build_with_bazel && inputs.use_ccache }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/kleaf-bazel
+          key: kleaf-${{ runner.os }}-${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ hashFiles('bazel_cache_key.txt') }}-${{ github.run_id }}
+          restore-keys: |
+            kleaf-${{ runner.os }}-${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ hashFiles('bazel_cache_key.txt') }}-
+
       - name: Clone custom source
         if: ${{ inputs.custom_kernel_source != 'rodin' }}
         run: |
@@ -561,88 +621,6 @@ jobs:
           fi
           cd "$CONFIG/common"
           patch -p1 --fuzz=3 < 60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch
-      - name: Copy the source file & apply LZ4KD & ZSTDN patches
-        if: ${{ inputs.use_zram }}
-        run: |
-          echo "更改为配置目录: $CONFIG..."
-          cd "$CONFIG/common"
-          cp -r ../../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
-          cp -r ../../SukiSU_patch/other/zram/lz4k/lib/* ./lib/
-          cp -r ../../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto/
-          cp -r ../../SukiSU_patch/other/zram/lz4k_oplus ./lib/
-
-          cp ../../SukiSU_patch/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
-          echo "正在打lz4kd补丁"
-          patch -p1 -F 3 < lz4kd.patch || true
-          echo '完成LZ4KD补丁'
-
-          cp ../../SukiSU_patch/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4k_oplus.patch ./
-          echo "正在打lz4k_oplus补丁"
-          patch -p1 -F 3 < lz4k_oplus.patch || true
-          echo '完成lz4k_oplus补丁'
-
-      - name: Apply additional hiding patches
-        if: ${{ inputs.apply_hide_stuff }}
-        run: |
-          echo "更改为配置目录: $CONFIG..."
-          cd "$CONFIG/common"
-          # Apply additional patch
-          if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
-            cp ../../SukiSU_patch/69_hide_stuff.patch ./
-            patch -p1 -F 3 < 69_hide_stuff.patch
-          else
-            cp ../../kernel_patches/69_hide_stuff.patch ./
-            patch -p1 -F 3 < 69_hide_stuff.patch
-          fi
-      - name: Configure LZ4KD & Lz4k_oplus
-        if: ${{ inputs.use_zram }}
-        run: |
-          set -x
-          set -e
-          echo "写入LZ4KD&ZSTDN config依赖"
-          CONFIG_FILE="$CONFIG/common/arch/arm64/configs/rodin_defconfig"
-
-          if [ "${{ inputs.kernel_version }}" = "5.10" ]; then
-            echo "CONFIG_ZSMALLOC=y" >> "$CONFIG_FILE"
-            echo "CONFIG_ZRAM=y" >> "$CONFIG_FILE"
-            echo "CONFIG_MODULE_SIG=n" >> "$CONFIG_FILE"
-            echo "CONFIG_CRYPTO_LZO=y" >> "$CONFIG_FILE"
-            echo "CONFIG_ZRAM_DEF_COMP_LZ4KD=y" >> "$CONFIG_FILE"
-          fi
-
-          if [ "${{ inputs.kernel_version }}" != "6.6" ] && [ "${{ inputs.kernel_version }}" != "5.10" ]; then
-            # sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' "$CONFIG_FILE"
-            if grep -q "CONFIG_ZSMALLOC" -- "$CONFIG_FILE"; then
-                echo "提示：文件 $CONFIG_FILE 包含字符串 CONFIG_ZSMALLOC。"
-                sed -i 's/CONFIG_ZSMALLOC=m/CONFIG_ZSMALLOC=y/g' "$CONFIG_FILE"
-            else
-                echo "警告：文件 $CONFIG_FILE 不包含字符串 CONFIG_ZSMALLOC。"
-                echo "CONFIG_ZSMALLOC=y" >> "$CONFIG_FILE"
-            fi
-
-            sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' "$CONFIG_FILE"
-          fi
-
-          if [ "${{ inputs.kernel_version }}" = "6.6" ]; then
-            echo "CONFIG_ZSMALLOC=y" >> "$CONFIG_FILE"
-            sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' "$CONFIG_FILE"
-          fi
-
-          if [ "${{ inputs.android_version }}" = "android14" ] || [ "${{ inputs.android_version }}" = "android15" ]; then
-            sed -i 's/"drivers\/block\/zram\/zram\.ko",//g; s/"mm\/zsmalloc\.ko",//g' "$CONFIG/common/modules.bzl"
-            echo "CONFIG_MODULE_SIG_FORCE=n" >> "$CONFIG_FILE"
-            echo 'Android14_Bazel:已修复zram&zsmalloc'
-          fi
-
-          if grep -q "CONFIG_ZSMALLOC=y" "$CONFIG_FILE" && grep -q "CONFIG_ZRAM=y" "$CONFIG_FILE"; then
-            echo "CONFIG_CRYPTO_LZ4HC=y" >> "$CONFIG_FILE"
-            echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
-            echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
-            echo "CONFIG_CRYPTO_842=y" >> "$CONFIG_FILE"
-            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
-            echo "CONFIG_ZRAM_WRITEBACK=y" >> "$CONFIG_FILE"
-          fi
-           
       - name: Add SUSFS & KSU into defconfig
         run: |
           echo "更改为配置目录: $CONFIG..."
@@ -725,28 +703,43 @@ jobs:
             set -x
             cd "$CONFIG/common"
             chmod +x ./build_kernel.sh
-            ./build_kernel.sh $DEFCONFIG $COMPILE_ARGS
-            echo "TIME=$(date "+%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+            ./build_kernel.sh "$DEFCONFIG" "$BUILD_LABEL" "${{ inputs.use_ccache }}"
+            
+      - name: Package AnyKernel3
+        run: |
+          set -euo pipefail
 
-      - name: Add KPM patches
-        if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
-        run: |
-          if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
-            echo "Patching Image file..."
-            cd "$CONFIG/out/arch/arm64/boot"
-            curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
-            chmod 777 patch
-            ./patch
-            rm -rf Image
-            mv oImage Image
-            cd ../../..
+          if [ -z "${KERNEL_IMAGE:-}" ] || [ ! -f "$KERNEL_IMAGE" ]; then
+            echo "Kernel image does not exist: ${KERNEL_IMAGE:-<unset>}"
+            exit 1
           fi
-      - name: Move artifacts to upload folder
-        run: |
-          mv ./$CONFIG/common/*.zip ./
+
+          if [ -d "$CONFIG/common/anykernel" ]; then
+            AK3_DIR="$CONFIG/common/anykernel"
+          else
+            AK3_DIR="$ANYKERNEL3"
+          fi
+
+          cp -v "$KERNEL_IMAGE" "$AK3_DIR/"
+
+          TIME="$(date '+%Y%m%d-%H%M%S')"
+          echo "TIME=$TIME" >> "$GITHUB_ENV"
+
+          ZIP_NAME="Rodin-${{ inputs.kernel_version }}-${BUILD_LABEL}-${TIME}-AnyKernel3.zip"
+          mkdir -p "$ARTIFACT_DIR"
+
+          (
+            cd "$AK3_DIR"
+            zip -r9 "$ARTIFACT_DIR/$ZIP_NAME" ./*
+          )
+
+          test -s "$ARTIFACT_DIR/$ZIP_NAME"
+          echo "AK3 artifact: $ARTIFACT_DIR/$ZIP_NAME"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: rodin-out-${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}-${{ env.TIME }}
           path: | 
-            *.zip
+            ${{ github.workspace }}/artifacts/*.zip
+          if-no-files-found: error
