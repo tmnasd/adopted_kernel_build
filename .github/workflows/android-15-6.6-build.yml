@@ -151,3 +151,4 @@ jobs:
       use_swap: ${{ inputs.use_swap }}
       use_bazel: ${{ inputs.use_bazel }}
       bazel_dist: ${{ inputs.bazel_dist }}
+      bazel_args: ${{ inputs.bazel_args }}
