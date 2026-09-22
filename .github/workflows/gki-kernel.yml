@@ -323,18 +323,6 @@ jobs:
         #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
         #  mv capybara-aosp-gki common
         #  ls -a
-        
-      - name: Prepare Bazel disk cache key
-        if: ${{ inputs.use_bazel && inputs.use_ccache }}
-        run: |
-          set -euo pipefail
-          SOURCE_REV="$(git -C "$CONFIG/common" rev-parse HEAD)"
-          printf '%s\n' \
-            "$SOURCE_REV" \
-            "${{ inputs.android_version }}" \
-            "${{ inputs.kernel_version }}" \
-            "${{ inputs.bazel_target }}" > bazel_cache_key.txt
-          echo "BAZEL_DISK_CACHE_DIR=$HOME/.cache/kleaf-bazel" >> "$GITHUB_ENV"
 
       - name: Cache Bazel/Kleaf build cache
         if: ${{ inputs.use_bazel && inputs.use_ccache }}
@@ -354,6 +342,17 @@ jobs:
         run: |
           echo "Adding build script..."
           mv build_kernel.sh $CONFIG/common
+      - name: Prepare Bazel disk cache key
+        if: ${{ inputs.use_bazel && inputs.use_ccache }}
+        run: |
+          set -euo pipefail
+          SOURCE_REV="$(git -C "$CONFIG/common" rev-parse HEAD)"
+          printf '%s\n' \
+            "$SOURCE_REV" \
+            "${{ inputs.android_version }}" \
+            "${{ inputs.kernel_version }}" \
+            "${{ inputs.bazel_target }}" > bazel_cache_key.txt
+          echo "BAZEL_DISK_CACHE_DIR=$HOME/.cache/kleaf-bazel" >> "$GITHUB_ENV"
       
       - name: Determine the branch of KernelSU
         run: |
