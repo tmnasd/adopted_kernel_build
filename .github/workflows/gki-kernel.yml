@@ -125,9 +125,6 @@ jobs:
           echo "CONFIG set to: $CONFIG"
           mkdir -p "$CONFIG"
 
-          COMPILE_ARGS="${{ format('{0}{1}{2}{3}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '', inputs.use_ccache && ' true' || ' false') }}"
-          echo "COMPILE_ARGS=$COMPILE_ARGS" >> $GITHUB_ENV
-          echo "Compile arg set to: $COMPILE_ARGS"
           BUILD_LABEL="${{ format('{0}{1}{2}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '') }}"
           echo "BUILD_LABEL=$BUILD_LABEL" >> $GITHUB_ENV
           echo "Build label set to: $BUILD_LABEL"
@@ -136,7 +133,7 @@ jobs:
           echo "Defconfig set to: $DEFCONFIG"
           
           echo "KERNEL_VERSION=${{ inputs.kernel_version }}" >> $GITHUB_ENV
-          echo "use_bazel=${{ inputs.use_bazel }}" >> $GITHUB_ENV
+          echo "BUILD_WITH_BAZEL=${{ inputs.use_bazel }}" >> $GITHUB_ENV
           echo "BAZEL_TARGET=${{ inputs.bazel_dist }}" >> $GITHUB_ENV
           echo "BAZEL_ARGS=${{ inputs.bazel_args }}" >> $GITHUB_ENV
           echo "ARTIFACT_DIR=$GITHUB_WORKSPACE/artifacts" >> $GITHUB_ENV
@@ -452,7 +449,7 @@ jobs:
             echo "Enable Baseband-Guard in defconfig"
             CONFIG_FILE="arch/arm64/configs/$DEFCONFIG"
             echo "CONFIG_BBG=y" >> "$CONFIG_FILE"
-            echo "CONFIG_LSM=\"landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,bpf,baseband_guard\"" >> "$CONFIG_FILE"
+            #echo "CONFIG_LSM=\"landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,bpf,baseband_guard\"" >> "$CONFIG_FILE"
           
             # 对于 GitHub Actions 云编译，修改 LSM Kconfig
             echo "Modify security/Kconfig to include baseband_guard..."
