@@ -460,6 +460,7 @@ jobs:
           # Verify changes
           if ! grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG; then
               echo "CONFIG_LSM=\"landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,bpf,baseband_guard\"" >> "$CONFIG_FILE"
+              grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG
           fi
           
           echo "Setup completed"
