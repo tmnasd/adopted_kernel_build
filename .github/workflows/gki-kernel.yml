@@ -82,7 +82,7 @@ on:
         default: false
       bazel_dist:
         type: string
-        defualt: "//common:kernel_aarch64_dist"
+        default: "//common:kernel_aarch64_dist"
       bazel_args:
         type: string
         default: ""
