@@ -1,5 +1,5 @@
-name: Build A15-6.6
-run-name: "Build A15-6.6 - KSU: ${{ inputs.kernelsu_variant }} | SUSFS: ${{ inputs.use_susfs }}"
+name: Build kernel for Rodin - A15 6.6
+run-name: "Build kernel for Rodin - A15 6.6 - KSU: ${{ inputs.kernelsu_variant }} | SUSFS: ${{ inputs.use_susfs }}"
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -124,31 +124,775 @@ on:
         type: string
         default: ""
 jobs:
-  build-kernel-a15-6-6-kernelsu-susfs:
-    strategy:
-      fail-fast: false
-    uses: ./.github/workflows/gki-kernel.yml
-    secrets: inherit
-    with:
-      clang_custom_link: ${{ inputs.clang_custom_link || 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android15-release/clang-r510928.tar.gz' }}
-      android_version: "android15"
-      kernel_version: "6.6"
-      kernelsu_variant: ${{ inputs.kernelsu_variant || 'Next' }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch || 'Dev' }}
-      kernelsu_custom_commit_hash: ${{ inputs.kernelsu_custom_commit_hash || 'latest' }}
-      use_zram: ${{ inputs.use_zram }}
-      use_kpm: ${{ inputs.use_kpm }}
-      BBG: ${{ inputs.BBG || false }}
-      custom_kernel_source: ${{ inputs.custom_kernel_source || 'rodin' }}
-      custom_susfs_commit_hash: ${{ inputs.custom_susfs_commit_hash || 'latest' }}
-      use_ccache: ${{ inputs.use_ccache }}  
-      use_susfs: ${{ inputs.use_susfs }}
-      use_enhanced_susfs: ${{ inputs.use_enhanced_susfs }}
-      use_superbuilders_susfs: ${{ inputs.use_superbuilders_susfs }}
-      use_zeromount: ${{ inputs.use_zeromount }}
-      defconfig_name: ${{ inputs.defconfig_name }}
-      max_build_space: ${{ inputs.max_build_space }}
-      use_swap: ${{ inputs.use_swap }}
-      use_bazel: ${{ inputs.use_bazel }}
-      bazel_dist: ${{ inputs.bazel_dist }}
-      bazel_args: ${{ inputs.bazel_args }}
+  build-kernel-kernelsu-susfs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Maximize Build Space
+        if: ${{ inputs.max_build_space }}
+        uses: AdityaGarg8/remove-unwanted-software@v5
+        with:
+          remove-dotnet: 'true'          # Frees ~2 GB
+          remove-android: 'true'         # Frees ~9 GB
+          remove-haskell: 'true'         # Frees ~5.2 GB
+          remove-codeql: 'true'          # Frees ~5.4 GB
+          remove-docker-images: 'true'   # Frees ~3.2 GB
+          remove-large-packages: 'true'  # Frees ~3.1 GB
+          remove-swapfile: 'true'        # Frees ~4 GB
+          remove-cached-tools: 'false'   # Avoid unless confirmed safe
+          verbose: 'true'                # Enable detailed logging
+
+      - name: Setup Swap Space
+        if: ${{ inputs.use_swap }}
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 25
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set the CONFIG environment variable
+        run: |
+          
+          # Set CONFIG dynamically based on inputs values
+          CONFIG="android15-6.6"
+
+          # Set CONFIG as an environment variable for future steps
+          echo "CONFIG=$CONFIG" >> $GITHUB_ENV
+
+          echo "CONFIG set to: $CONFIG"
+          mkdir -p "$CONFIG"
+
+          BUILD_LABEL="${{ format('{0}{1}{2}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '') }}"
+          echo "BUILD_LABEL=$BUILD_LABEL" >> $GITHUB_ENV
+          echo "Build label set to: $BUILD_LABEL"
+
+          echo "DEFCONFIG=${{ inputs.defconfig_name }}" >> $GITHUB_ENV
+          echo "Defconfig set to: $DEFCONFIG"
+          
+          echo "KERNEL_VERSION=${{ inputs.kernel_version }}" >> $GITHUB_ENV
+          echo "BUILD_WITH_BAZEL=${{ inputs.use_bazel }}" >> $GITHUB_ENV
+          echo "BAZEL_TARGET=${{ inputs.bazel_dist }}" >> $GITHUB_ENV
+          echo "BAZEL_ARGS=${{ inputs.bazel_args }}" >> $GITHUB_ENV
+          echo "ARTIFACT_DIR=$GITHUB_WORKSPACE/artifacts" >> $GITHUB_ENV
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+      - name: Install ccache
+        if: ${{ inputs.use_ccache && !inputs.use_bazel }}
+        run: sudo apt update && sudo apt upgrade -y && sudo apt install -y ccache python3 git curl
+
+      - name: Configure CCache
+        if: ${{ inputs.use_ccache && !inputs.use_bazel }}
+        run: |
+          export CCACHE_DIR="$HOME/.ccache"
+          mkdir -p "$CCACHE_DIR"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> $GITHUB_ENV
+          ccache --version
+          ccache --max-size=2G
+          ccache --set-config=compression=true
+      
+      # Step 2: Download toolchain if cache was not found
+      - name: Download the toolchain.
+        run: |
+          AOSP_MIRROR=https://android.googlesource.com
+          BRANCH=main-kernel-build-2024
+          git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
+          git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth 1 mkbootimg
+
+      - name: Set environment variables
+        run: |
+          echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
+          echo "MKBOOTIMG=$GITHUB_WORKSPACE/mkbootimg/mkbootimg.py" >> $GITHUB_ENV
+          echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV
+          mkdir -p "$GITHUB_WORKSPACE/AnyKernel3"
+          echo "ANYKERNEL3=$GITHUB_WORKSPACE/AnyKernel3" >> $GITHUB_ENV
+          KERNEL_ROOT="$GITHUB_WORKSPACE/$CONFIG"
+          echo "KERNEL_ROOT=$KERNEL_ROOT" >> $GITHUB_ENV
+      - name: Generate Toolchain Key
+        if: ${{ !inputs.use_bazel }}
+        run: echo "${{ inputs.clang_custom_link }}" > clang_url.txt
+      - name: Cache AOSP Clang
+        if: ${{ !inputs.use_bazel }}
+        id: cache-clang
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/android15-6.6/toolchains/clang  # The directory where you install clang
+          key: clang-${{ hashFiles('clang_url.txt') }}
+      - name: Download AOSP Clang
+        if: ${{ !inputs.use_bazel && steps.cache-clang.outputs.cache-hit != 'true' }}
+        run: |
+          # Create a directory for Clang
+          mkdir -p $CONFIG/toolchains/clang
+        
+          # Download the tarball from the AOSP source
+          # Using -L to follow redirects and -o to specify the output filename
+          curl -L ${{ inputs.clang_custom_link }} -o clang.tar.gz
+        
+          # Extract the archive into the folder
+          tar -xzf clang.tar.gz -C $CONFIG/toolchains/clang
+        
+          # Clean up the tarball to save disk space
+          rm clang.tar.gz
+      - name: Install AOSP Clang
+        if: ${{ !inputs.use_bazel }}
+        run: echo "$CONFIG/toolchains/clang/bin" >> $GITHUB_PATH
+
+      - name: Verify Clang Installation
+        if: ${{ !inputs.use_bazel }}
+        run: |
+          clang --version
+      
+      - name: Install repositories & dependencies
+        run: |
+          # Install dependencies
+          mkdir -p ./git-repo
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ./git-repo/repo
+          chmod a+rx ./git-repo/repo
+          echo "REPO=$GITHUB_WORKSPACE/./git-repo/repo" >> $GITHUB_ENV
+
+      - name: Prepare Kleaf workspace
+        if: ${{ inputs.use_bazel }}
+        run: |
+          set -euo pipefail
+          cd "$CONFIG"
+
+          MANIFEST_BRANCH="common-android15-6.6"
+
+          echo "Using kernel manifest branch: $MANIFEST_BRANCH"
+          "$REPO" init \
+            -u https://android.googlesource.com/kernel/manifest \
+            -b "$MANIFEST_BRANCH" \
+            --depth=1
+          "$REPO" sync -c --no-tags --no-clone-bundle -j"$(nproc)"
+
+          # common/ will be replaced by the selected custom kernel source below.
+          rm -rf common
+
+      - name: Clone AnyKernel3 & Kernel patches
+        run: |
+          echo "Cloning AnyKernel3 and other dependencies..."
+
+          ANYKERNEL_BRANCH="gki-2.0"
+          SUSFS_BRANCH="gki-android15-6.6"
+
+          # Debug print the branches
+          echo "Using branch for SUSFS: $SUSFS_BRANCH"
+
+          # Clone repositories using the branch names
+          git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
+          git clone -b "$SUSFS_BRANCH" --single-branch https://gitlab.com/simonpunk/susfs4ksu.git
+          if [ "${{ inputs.custom_susfs_commit_hash }}" != "latest" ]; then
+            cd susfs4ksu
+            git checkout ${{ inputs.custom_susfs_commit_hash }}
+            cd ..
+          fi
+          
+          git clone https://github.com/WildKernels/kernel_patches.git
+          KERNEL_PATCHES=$GITHUB_WORKSPACE/kernel_patches
+          echo "KERNEL_PATCHES=$KERNEL_PATCHES" >> $GITHUB_ENV
+          # Sukisu的补丁仓库
+          git clone https://github.com/ShirkNeko/SukiSU_patch.git
+
+          # SuperBuilders patches
+          git clone https://github.com/Enginex0/Super-Builders.git
+
+          # Determine working SuperBuilders folder
+          variant_input="${{ inputs.kernelsu_variant }}"
+
+
+          case "$variant_input" in
+              "Next")     
+                echo "SUPER_DIR=Super-Builders/android15-6.6/KernelSU-Next/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-kernelsu-next-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=KernelSU-Next" >> $GITHUB_ENV
+                ;;
+              "SukiSU")   
+                echo "SUPER_DIR=Super-Builders/android15-6.6/SukiSU-Ultra/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-sukisu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=KernelSU" >> $GITHUB_ENV
+                ;;
+              "WKSU")     
+                echo "SUPER_DIR=Super-Builders/android15-6.6/WildKSU/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-wksu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=Wild_KSU" >> $GITHUB_ENV
+                ;;
+              "ReSukiSU")
+                echo "SUPER_DIR=Super-Builders/android15-6.6/ReSukiSU/patches" >> $GITHUB_ENV 
+                echo "KSU_ENHANCED_PATCH=70_ksu_safety-resukisu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
+                echo "KSU_DIR=KernelSU" >> $GITHUB_ENV
+                ;;
+              *) 
+                echo "This variant of KSU is not supported by Super Builders!"
+                echo "SUPER_DIR=UNSUPPORTED" >> $GITHUB_ENV
+                ;;
+          esac
+
+              
+      - name: Set CONFIG variable
+        run: |
+          # Set CONFIG dynamically based on inputs values
+          CONFIG="android15-6.6"
+
+          # Set CONFIG as an environment variable fogle the tab key moving focus. Alterr future steps
+          echo "CONFIG=$CONFIG" >> $GITHUB_ENV
+
+          echo "CONFIG set to: $CONFIG"
+
+      - name: Generate Kernel Source Key
+        if: ${{ inputs.use_ccache && !inputs.use_bazel }}
+        run: echo "${{ github.event.inputs.custom_kernel_source }}" > kernel_url.txt
+      - name: Cache CCache
+        if: ${{ inputs.use_ccache && !inputs.use_bazel }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: kernel-ccache-${{ hashFiles('kernel_url.txt') }}-${{ github.run_id }}
+          restore-keys: |
+            kernel-ccache-${{ hashFiles('kernel_url.txt') }}
+      - name: Clone rodin source
+        if: ${{ inputs.custom_kernel_source == 'rodin' }}
+        run: |
+          cd "$CONFIG"
+          git clone --depth 1 https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com/tmnasd/smol-rodin-kernel-021.git common
+        #run: |
+        #  cd "$CONFIG"
+        #  git clone https://github.com/71chjzkc/capybara-aosp-gki.git -b 6.6.89-capybara-gki-0.1 --depth 1
+        #  mv capybara-aosp-gki common
+        #  ls -a
+
+      - name: Cache Bazel/Kleaf build cache
+        if: ${{ inputs.use_bazel && inputs.use_ccache }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/kleaf-bazel
+          key: kleaf-${{ runner.os }}-android15-6.6-${{ hashFiles('bazel_cache_key.txt') }}-${{ github.run_id }}
+          restore-keys: |
+            kleaf-${{ runner.os }}-android15-6.6-${{ hashFiles('bazel_cache_key.txt') }}-
+
+      - name: Clone custom source
+        if: ${{ inputs.custom_kernel_source != 'rodin' }}
+        run: |
+          cd "$CONFIG"
+          git clone ${{  inputs.custom_kernel_source  }} common
+      - name: Add build script
+        run: |
+          echo "Adding build script..."
+          mv build_kernel.sh $CONFIG/common
+      - name: Prepare Bazel disk cache key
+        if: ${{ inputs.use_bazel && inputs.use_ccache }}
+        run: |
+          set -euo pipefail
+          SOURCE_REV="$(git -C "$CONFIG/common" rev-parse HEAD)"
+          printf '%s\n' \
+            "$SOURCE_REV" \
+            "${{ inputs.android_version }}" \
+            "${{ inputs.kernel_version }}" \
+            "${{ inputs.bazel_target }}" > bazel_cache_key.txt
+          echo "BAZEL_DISK_CACHE_DIR=$HOME/.cache/kleaf-bazel" >> "$GITHUB_ENV"
+      
+      - name: Determine the branch of KernelSU
+        run: |
+          branch_input="${{ inputs.kernelsu_branch }}"
+          variant_input="${{ inputs.kernelsu_variant }}"
+          
+          case "$branch_input" in
+            "Stable")
+              case "$variant_input" in
+                "Official" | "MKSU" | "ReSukiSU") echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "Next" | "WKSU")                  echo "BRANCH=-s stable" >> $GITHUB_ENV ;;
+                "SukiSU")                         echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "MamboSU" | "KowSU")              echo "BRANCH=-s master" >> $GITHUB_ENV ;;
+                *) 
+                  echo "Invalid choice '$variant_input'" >&2
+                  exit 1
+                  ;;
+              esac
+              ;;
+            "Dev")
+              case "$variant_input" in
+                "MKSU") echo "BRANCH=-s dev" >> $GITHUB_ENV ;;
+                "SukiSU")                         echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
+                "WKSU")                           echo "BRANCH=-s canary" >> $GITHUB_ENV ;;
+                "MamboSU")                        echo "BRANCH=-s susfs-mambo-master" >> $GITHUB_ENV ;;
+                "Next")                           echo "BRANCH=-s dev-susfs" >> $GITHUB_ENV  ;;
+                "Official" | "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "KowSU")                          echo "BRANCH=-s master" >> $GITHUB_ENV ;;
+                *) 
+                  echo "Invalid choice '$variant_input'" >&2
+                  exit 1
+                  ;;
+              esac
+              ;;
+            *)
+              echo "Invalid choice! Aborting" >&2
+              exit 1
+              ;;
+          esac
+          if [ "${{ inputs.kernelsu_custom_commit_hash }}" != "latest" ]; then
+            echo "BRANCH=-s ${{ inputs.kernelsu_custom_commit_hash }}" >> $GITHUB_ENV
+          fi
+
+      - name: Add KernelSU
+        run: |
+          echo "更改为配置目录: $CONFIG..."
+          cd "$CONFIG"
+          if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
+            echo "Adding KernelSU Official..."
+            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
+            echo "Adding KernelSU Next..."
+            curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash $BRANCH
+            cd KernelSU-Next
+            patch -p1 < <(curl -sL "https://raw.githubusercontent.com/midori01/gki_ksu_workflow/refs/heads/main/.github/patches/22_extra_features_for_ksu.patch")
+          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
+            echo "Adding KernelSU MKSU..."
+            curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
+            echo "Adding KernelSU SukiSU..."
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+            
+          elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
+            echo "Adding Wild KSU..."
+            curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
+            echo "Adding MamboSU..."
+            curl -LSs "https://raw.githubusercontent.com/RapliVx/KernelSU/refs/heads/master/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+            echo "Adding ReSukiSU..."
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
+           elif [ "${{ inputs.kernelsu_variant }}" == "KowSU" ]; then
+            echo "Adding KowSU..."
+            curl -LSs "https://raw.githubusercontent.com/KOWX712/KernelSU/refs/heads/master/kernel/setup.sh" | bash $BRANCH
+            patch -p1 -d KernelSU < <(curl -sSfL "https://github.com/midori01/KernelSU/commit/kow~2.patch")
+            patch -p1 -d KernelSU < <(curl -sSfL "https://github.com/midori01/KernelSU/commit/kow~1.patch")
+            
+          fi
+
+      - name: Add Baseband-guard support
+        if: ${{ inputs.BBG }}
+        run: |
+          cd "$CONFIG/common"
+          HAS_BBG=false
+
+          if [ -d "Baseband-guard" ]; then
+            echo "Existing Baseband-Guard detected. Updating to latest..."
+            chmod +x ./Baseband-guard/setup.sh
+            ./Baseband-guard/setup.sh --cleanup
+            HAS_BBG=true
+          fi
+          
+          echo "Setting up Baseband-Guard"
+          wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+          
+          if [[ "$HAS_BBG" == "false" ]]; then
+            echo "Enable Baseband-Guard in defconfig"
+            CONFIG_FILE="arch/arm64/configs/$DEFCONFIG"
+            echo "CONFIG_BBG=y" >> "$CONFIG_FILE"
+            #echo "CONFIG_LSM=\"landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,bpf,baseband_guard\"" >> "$CONFIG_FILE"
+          
+            # 对于 GitHub Actions 云编译，修改 LSM Kconfig
+            echo "Modify security/Kconfig to include baseband_guard..."
+            sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
+
+            sed -i '/^CONFIG_LSM=/s/"$/,baseband_guard"/' arch/arm64/configs/$DEFCONFIG
+          fi
+          # Verify changes
+          if ! grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG; then
+              echo "CONFIG_LSM=\"landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,bpf,baseband_guard\"" >> "$CONFIG_FILE"
+              grep "CONFIG_LSM=" arch/arm64/configs/$DEFCONFIG
+          fi
+          
+          echo "Setup completed"
+
+      
+      - name: Enable susfs4ksu in ksu
+        if: ${{ inputs.use_susfs }}
+        run: |
+          echo "Change working directory to: $CONFIG..."
+          cd "$CONFIG"
+
+          echo "Enabling SUSFS in KSU..."
+
+          # Copy SUSFS patches
+          
+          if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
+            echo "Applying SUSFS patches for Official KernelSU..."
+            cd ./KernelSU
+            cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
+            patch -p1 --forward --fuzz=3 < 10_enable_susfs_for_ksu.patch
+          elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
+          #   echo "Applying SUSFS patches for KernelSU-Next..."
+             cd ./KernelSU-Next
+          #   patch -p1 < <(curl -sSfL "https://github.com/midori01/KernelSU/commit/next.patch")
+          #   cp ${{github.workspace}}/kernel_patches/wild/ksun-0daf55582-susfs-v2.1.0-e259e7d6.patch ./
+          #   patch -p1 < ksun-0daf55582-susfs-v2.1.0-e259e7d6.patch
+          #   curl -LSs https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/dev/0001-kernel-patch-susfs-v1.5.7-to-KernelSU-Next-v1.0.7.patch -o susfs.patch 
+          #   patch -p1 --forward < susfs.patch
+
+          # #   cp ../../kernel_patches/next/kernel-patch-susfs-v1.5.7-to-KernelSU-Next.patch ./
+          # #   patch -p1 --forward --fuzz=3 < kernel-patch-susfs-v1.5.7-to-KernelSU-Next.patch || true
+          # #   # 临时补丁
+          # #   curl -LSs "https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/dev/fix_ksun_susfs.patch" -o fix_ksun_susfs.patch
+          # #   echo '应用KSUN临时修复补丁'
+          # #   patch -p1 --forward < fix_ksun_susfs.patch
+          #   sed -i '/bool ksu_devpts_hook = false;/d' ./kernel/sucompat.c
+          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
+            echo "Applying SUSFS patches for MKSU..."
+             cd ./KernelSU
+            cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
+            patch -p1 --forward --fuzz=3 < 10_enable_susfs_for_ksu.patch || true
+
+            echo "Applying MKSU specific SUSFS patch..."
+            cp ../../kernel_patches/mksu/mksu_susfs.patch ./
+            patch -p1 < mksu_susfs.patch || true
+            cp ../../kernel_patches/mksu/fix.patch ./
+            patch -p1 < fix.patch || true
+          elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
+            echo "Applying SUSFS patches for SukiSU..."
+            cd ./KernelSU
+            if [ ${{ inputs.kernelsu_branch }} == "Stable" ]; then
+              echo "Stable branch detected. Trying to apply official patches (might not work)"
+              cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
+              patch -p1 --forward --fuzz=3 < 10_enable_susfs_for_ksu.patch || true
+            fi
+          elif [ "${{ inputs.kernelsu_variant }}" == "WKSU" ]; then
+            echo "Applying SUSFS patches for WKSU..."
+            cd ./Wild_KSU
+          elif [ "${{ inputs.kernelsu_variant }}" == "MamboSU" ]; then
+            echo "Looks like MamboSU doesn't need any additional patches. Skipping for now..."
+            cd ./KernelSU
+          elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
+            echo "Looks like ReSukiSU doesn't need any additional patches. Skipping for now..."
+            cd ./KernelSU
+          elif [ "${{ inputs.kernelsu_variant }}" == "KowSU" ]; then
+            echo "Adding susfs4ksu support for KowSU"
+            cd KernelSU
+            patch -p1 < <(curl -sL "https://github.com/midori01/KernelSU/commit/kow.patch")
+          else
+            echo "Invalid KernelSU variant selected!"
+            exit 1
+          fi
+
+      - name: Apply susfs4ksu patches
+        if: ${{ inputs.use_susfs }}
+        run: |
+          cd "$CONFIG"
+          if [[ "${{ inputs.use_superbuilders_susfs }}" == "false" || "$SUPER_DIR" == "UNSUPPORTED" ]]; then
+            echo "Using simonpunk's patch"
+            cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
+            cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
+            cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+            cd common
+            echo "Generating de-inlined patch..."
+            cd ../..
+            git clone https://github.com/midori01/gki_ksu_workflow.git
+            cd "$CONFIG/common"
+            bash "../../gki_ksu_workflow/.github/scripts/susfs_deinlined.sh" "./50_add_susfs_in_gki-android15-6.6.patch"
+            patch -p1 --fuzz=3 < deinlined.patch
+          else
+            echo "Using SuperBuilders patch"
+            cp ../$SUPER_DIR/50_add_susfs_in_gki-android15-6.6.patch ./common
+            cd common
+            patch -p1 --fuzz=3 < 50_add_susfs_in_gki-android15-6.6.patch || true
+          fi
+      - name: Apply susfs4ksu enhanced patch
+        if: ${{ inputs.use_susfs && inputs.use_enhanced_susfs && github.env.SUPER_DIR != 'UNSUPPORTED' }}
+        run: |
+          cd "$CONFIG"
+          echo "Apply enhanced susfs4ksu patch"
+          cp ../$SUPER_DIR/51_enhanced_susfs-android15-6.6.patch ./common
+          cd common
+          patch -p1 --fuzz=3 < 51_enhanced_susfs-android15-6.6.patch || true
+          cd ..
+
+          echo "Enable extra features in KSU"
+          cp ../$SUPER_DIR/$KSU_ENHANCED_PATCH ./$KSU_DIR
+          cd "$KSU_DIR"
+          patch -p1 --fuzz=3 < $KSU_ENHANCED_PATCH
+      - name: some fixes
+        run: |
+          cd "$CONFIG/common"
+          FORMATTED_BRANCH="android15-6.6"
+          # Fake Patch to fix failures
+          fake_patched=0
+          if [ "$FORMATTED_BRANCH" = "android15-6.6" ]; then
+            if ! grep -qxF $'\tunsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
+              echo "未找到 nr_subpages,正在进行补丁修复"
+              sed -i -e '/int ret = 0, copied = 0;/a \\tunsigned int nr_subpages \= __PAGE_SIZE \/ PAGE_SIZE;' -e '/int ret = 0, copied = 0;/a \\tpagemap_entry_t \*res = NULL;' ./fs/proc/task_mmu.c
+              fake_patched=1
+            fi
+          fi
+          
+          if [ "$FORMATTED_BRANCH" = "android12-5.10" ] || [ "$FORMATTED_BRANCH" = "android13-5.10" ] || [ "$FORMATTED_BRANCH" = "android13-5.15" ]; then
+            if ! grep -qxF $'\tif (!vma_pages(vma))' ./fs/proc/task_mmu.c; then
+              echo "未找到 vma_pages,正在进行补丁修复"
+              fake_patched=1
+            fi
+          fi
+
+          if [ "$fake_patched" = 1 ]; then
+            if [ "$FORMATTED_BRANCH" = "android15-6.6" ]; then
+              if grep -qxF $'\tunsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
+                sed -i -e '/unsigned int nr_subpages \= __PAGE_SIZE \/ PAGE_SIZE;/d' -e '/pagemap_entry_t \*res = NULL;/d' ./fs/proc/task_mmu.c
+              fi
+            fi
+            
+            if [ "$FORMATTED_BRANCH" = "android12-5.10" ] || [ "$FORMATTED_BRANCH" = "android13-5.10" ] || [ "$FORMATTED_BRANCH" = "android13-5.15" ]; then
+              if grep -qxF $'\t\tgoto show_pad;' ./fs/proc/task_mmu.c; then
+                sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
+              fi
+            fi
+          fi
+  
+      - name: Zero-width character fix
+        run: |
+          cp ./kernel_patches/common/unicode_bypass_fix_6.1+.patch ./$CONFIG/common/
+          cd "$CONFIG/common"
+          patch -p1 < unicode_bypass_fix_6.1+.patch
+      
+      - name: Apply ZeroMount VFS kernel patch
+        if: ${{ inputs.use_zeromount }}
+        run: |
+          if [ "$SUPER_DIR" == "UNSUPPORTED" ]; then
+            echo "Be cautioned! You're applying ZeroMount VFS patch on an unsupported ksu variant. Stuff may fail!"
+            cp ./SuperBuilders/android15-6.6/WildKSU/patches/60_zeromount-android15-6.6.patch ./$CONFIG/common
+          else
+            cp ./$SUPER_DIR/60_zeromount-android15-6.6.patch ./$CONFIG/common
+          fi
+          cd "$CONFIG/common"
+          patch -p1 --fuzz=3 < 60_zeromount-android15-6.6.patch
+      - name: Add SUSFS & KSU into defconfig - Legacy Build.sh
+        if: ${{ !inputs.use_bazel }}
+        run: |
+          echo "更改为配置目录: $CONFIG..."
+          cd "$CONFIG"
+          echo "Adding configuration settings to defconfig..."
+
+          # Add KSU configuration settings
+          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+
+          if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
+            echo "CONFIG_KSU_KPROBES_HOOK=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+          elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
+            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
+            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+          fi
+          
+          # Add additional tmpfs config setting
+          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+
+          # Add additional config setting
+          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+
+          # Add BBR Config
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_BIC=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/$DEFCONFIG
+
+          if [ "${{ inputs.use_susfs }}" == "true" ]; then
+            # Add SUSFS configuration settings
+            echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            # Enhanced susfs
+            if [ "${{ inputs.use_enhanced_susfs }}" == "true" ]; then
+              echo "CONFIG_KSU_SUSFS_SUS_KSTAT_REDIRECT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+              echo "CONFIG_KSU_SUSFS_UNICODE_FILTER=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+              echo "CONFIG_KSU_SUSFS_HIDDEN_NAME=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+              echo "CONFIG_KSU_SUSFS_HARDENED=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+            fi
+          fi
+          
+          # Add NoMount config
+          
+          if [ "${{ inputs.nomount_support }}" == "true" ]; then
+            echo "CONFIG_NOMOUNT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          fi
+
+          # ZeroMount config
+          if [ "${{ inputs.use_zeromount }}" == "true" ]; then
+            echo "CONFIG_ZEROMOUNT=y" >> ./common/arch/arm64/configs/$DEFCONFIG
+          fi
+          
+          # Remove check_defconfig
+          sed -i 's/check_defconfig//' ./common/build.config.gki
+        
+        
+      - name: Add SUSFS & KSU into defconfig - Bazel
+        if: ${{ inputs.use_bazel }}
+        run: |
+          echo "Current Working Dir: $CONFIG..."
+          cd "$CONFIG"
+          echo "Adding configuration settings to defconfig..."
+
+          CONFIG_FILE="./common/arch/arm64/configs/$DEFCONFIG"
+          CONFIG_TOOL="./common/scripts/config"
+
+          # Helper for editing kernel config safely.
+          # Use bash explicitly so this does not depend on executable bit.
+          kconfig() {
+            bash "$CONFIG_TOOL" --file "$CONFIG_FILE" "$@"
+          }
+
+          # ============================================================
+          # KernelSU
+          # ============================================================
+
+          kconfig -e KSU
+
+          case "${{ inputs.kernelsu_variant }}" in
+            "Next")
+          	kconfig \
+          	  -d KSU_KPROBES_HOOK \
+          	  -d KSU_SUSFS_SUS_SU
+          	;;
+
+            "SukiSU")
+          	kconfig \
+          	  -e KPM \
+          	  -d KSU_SUSFS_SUS_SU
+          	;;
+
+            "MKSU")
+          	kconfig \
+          	  -d KSU_SUSFS_SUS_SU
+          	;;
+          esac
+
+          # ============================================================
+          # TMPFS
+          # ============================================================
+
+          kconfig \
+            -e TMPFS_XATTR \
+            -e TMPFS_POSIX_ACL
+
+          # ============================================================
+          # Netfilter
+          # ============================================================
+
+          kconfig \
+            -e IP_NF_TARGET_TTL \
+            -e IP6_NF_TARGET_HL \
+            -e IP6_NF_MATCH_HL
+
+          # ============================================================
+          # BBR
+          # ============================================================
+
+          kconfig \
+            -e TCP_CONG_ADVANCED \
+            -e TCP_CONG_BBR \
+            -e NET_SCH_FQ \
+            -d TCP_CONG_BIC \
+            -d TCP_CONG_WESTWOOD \
+            -d TCP_CONG_HTCP
+
+          # ============================================================
+          # SUSFS
+          # ============================================================
+
+          if [ "${{ inputs.use_susfs }}" = "true" ]; then
+            kconfig \
+          	-e KSU_SUSFS \
+          	-e KSU_SUSFS_SUS_MAP \
+          	-e KSU_SUSFS_SUS_PATH \
+          	-e KSU_SUSFS_SUS_MOUNT \
+          	-e KSU_SUSFS_SUS_KSTAT \
+          	-e KSU_SUSFS_SPOOF_UNAME \
+          	-e KSU_SUSFS_ENABLE_LOG \
+          	-e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+          	-e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+          	-e KSU_SUSFS_OPEN_REDIRECT
+
+            # Enhanced SUSFS
+            if [ "${{ inputs.use_enhanced_susfs }}" = "true" ]; then
+          	kconfig \
+          	  -e KSU_SUSFS_SUS_KSTAT_REDIRECT \
+          	  -e KSU_SUSFS_UNICODE_FILTER \
+          	  -e KSU_SUSFS_HIDDEN_NAME \
+          	  -e KSU_SUSFS_HARDENED
+            fi
+          fi
+
+          # ============================================================
+          # NoMount
+          # ============================================================
+
+          if [ "${{ inputs.nomount_support }}" = "true" ]; then
+            kconfig -e NOMOUNT
+          fi
+
+          # ============================================================
+          # ZeroMount
+          # ============================================================
+
+          if [ "${{ inputs.use_zeromount }}" = "true" ]; then
+            kconfig -e ZEROMOUNT
+          fi
+
+      - name: Build with retry
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 180
+          max_attempts: 3
+          retry_on: timeout
+          command: |
+            set -e
+            set -x
+            cd "$CONFIG/common"
+            chmod +x ./build_kernel.sh
+            ./build_kernel.sh "$DEFCONFIG" "$BUILD_LABEL" "${{ inputs.use_ccache }}"
+            
+      - name: Package AnyKernel3
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KERNEL_IMAGE:-}" ] || [ ! -f "$KERNEL_IMAGE" ]; then
+            echo "Kernel image does not exist: ${KERNEL_IMAGE:-<unset>}"
+            exit 1
+          fi
+
+          if [ -d "$CONFIG/common/anykernel" ]; then
+            AK3_DIR="$CONFIG/common/anykernel"
+          else
+            AK3_DIR="$ANYKERNEL3"
+          fi
+
+          cp -v "$KERNEL_IMAGE" "$AK3_DIR/"
+
+          TIME="$(date '+%Y%m%d-%H%M%S')"
+          echo "TIME=$TIME" >> "$GITHUB_ENV"
+
+          ZIP_NAME="Rodin-${{ inputs.kernel_version }}-${BUILD_LABEL}-${TIME}-AnyKernel3.zip"
+          mkdir -p "$ARTIFACT_DIR"
+
+          (
+            cd "$AK3_DIR"
+            zip -r9 "$ARTIFACT_DIR/$ZIP_NAME" ./*
+          )
+
+          test -s "$ARTIFACT_DIR/$ZIP_NAME"
+          echo "AK3 artifact: $ARTIFACT_DIR/$ZIP_NAME"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rodin-out-${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}-${{ env.TIME }}
+          path: | 
+            ${{ github.workspace }}/artifacts/*.zip
+          if-no-files-found: error
+
