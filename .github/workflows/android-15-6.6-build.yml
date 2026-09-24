@@ -153,7 +153,7 @@ jobs:
         run: |
           
           # Set CONFIG dynamically based on inputs values
-          CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+          CONFIG="android15-6.6"
 
           # Set CONFIG as an environment variable for future steps
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
@@ -213,7 +213,7 @@ jobs:
         id: cache-clang
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/${{ inputs.android_version }}-${{ inputs.kernel_version }}/toolchains/clang  # The directory where you install clang
+          path: ${{ github.workspace }}/android15-6.6/toolchains/clang  # The directory where you install clang
           key: clang-${{ hashFiles('clang_url.txt') }}
       - name: Download AOSP Clang
         if: ${{ !inputs.use_bazel && steps.cache-clang.outputs.cache-hit != 'true' }}
@@ -253,7 +253,7 @@ jobs:
           set -euo pipefail
           cd "$CONFIG"
 
-          MANIFEST_BRANCH="common-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+          MANIFEST_BRANCH="common-android15-6.6"
 
           echo "Using kernel manifest branch: $MANIFEST_BRANCH"
           "$REPO" init \
@@ -270,7 +270,7 @@ jobs:
           echo "Cloning AnyKernel3 and other dependencies..."
 
           ANYKERNEL_BRANCH="gki-2.0"
-          SUSFS_BRANCH="gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+          SUSFS_BRANCH="gki-android15-6.6"
 
           # Debug print the branches
           echo "Using branch for SUSFS: $SUSFS_BRANCH"
@@ -299,22 +299,22 @@ jobs:
 
           case "$variant_input" in
               "Next")     
-                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/KernelSU-Next/patches" >> $GITHUB_ENV 
+                echo "SUPER_DIR=Super-Builders/android15-6.6/KernelSU-Next/patches" >> $GITHUB_ENV 
                 echo "KSU_ENHANCED_PATCH=70_ksu_safety-kernelsu-next-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
                 echo "KSU_DIR=KernelSU-Next" >> $GITHUB_ENV
                 ;;
               "SukiSU")   
-                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/SukiSU-Ultra/patches" >> $GITHUB_ENV 
+                echo "SUPER_DIR=Super-Builders/android15-6.6/SukiSU-Ultra/patches" >> $GITHUB_ENV 
                 echo "KSU_ENHANCED_PATCH=70_ksu_safety-sukisu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
                 echo "KSU_DIR=KernelSU" >> $GITHUB_ENV
                 ;;
               "WKSU")     
-                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/WildKSU/patches" >> $GITHUB_ENV 
+                echo "SUPER_DIR=Super-Builders/android15-6.6/WildKSU/patches" >> $GITHUB_ENV 
                 echo "KSU_ENHANCED_PATCH=70_ksu_safety-wksu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
                 echo "KSU_DIR=Wild_KSU" >> $GITHUB_ENV
                 ;;
               "ReSukiSU")
-                echo "SUPER_DIR=Super-Builders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/ReSukiSU/patches" >> $GITHUB_ENV 
+                echo "SUPER_DIR=Super-Builders/android15-6.6/ReSukiSU/patches" >> $GITHUB_ENV 
                 echo "KSU_ENHANCED_PATCH=70_ksu_safety-resukisu-${{ inputs.kernel_version }}.patch" >> $GITHUB_ENV
                 echo "KSU_DIR=KernelSU" >> $GITHUB_ENV
                 ;;
@@ -328,7 +328,7 @@ jobs:
       - name: Set CONFIG variable
         run: |
           # Set CONFIG dynamically based on inputs values
-          CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+          CONFIG="android15-6.6"
 
           # Set CONFIG as an environment variable fogle the tab key moving focus. Alterr future steps
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
@@ -362,9 +362,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/kleaf-bazel
-          key: kleaf-${{ runner.os }}-${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ hashFiles('bazel_cache_key.txt') }}-${{ github.run_id }}
+          key: kleaf-${{ runner.os }}-android15-6.6-${{ hashFiles('bazel_cache_key.txt') }}-${{ github.run_id }}
           restore-keys: |
-            kleaf-${{ runner.os }}-${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ hashFiles('bazel_cache_key.txt') }}-
+            kleaf-${{ runner.os }}-android15-6.6-${{ hashFiles('bazel_cache_key.txt') }}-
 
       - name: Clone custom source
         if: ${{ inputs.custom_kernel_source != 'rodin' }}
@@ -576,7 +576,7 @@ jobs:
           cd "$CONFIG"
           if [[ "${{ inputs.use_superbuilders_susfs }}" == "false" || "$SUPER_DIR" == "UNSUPPORTED" ]]; then
             echo "Using simonpunk's patch"
-            cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
+            cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
             cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
             cd common
@@ -584,22 +584,22 @@ jobs:
             cd ../..
             git clone https://github.com/midori01/gki_ksu_workflow.git
             cd "$CONFIG/common"
-            bash "../../gki_ksu_workflow/.github/scripts/susfs_deinlined.sh" "./50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch"
+            bash "../../gki_ksu_workflow/.github/scripts/susfs_deinlined.sh" "./50_add_susfs_in_gki-android15-6.6.patch"
             patch -p1 --fuzz=3 < deinlined.patch
           else
             echo "Using SuperBuilders patch"
-            cp ../$SUPER_DIR/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common
+            cp ../$SUPER_DIR/50_add_susfs_in_gki-android15-6.6.patch ./common
             cd common
-            patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
+            patch -p1 --fuzz=3 < 50_add_susfs_in_gki-android15-6.6.patch || true
           fi
       - name: Apply susfs4ksu enhanced patch
         if: ${{ inputs.use_susfs && inputs.use_enhanced_susfs && github.env.SUPER_DIR != 'UNSUPPORTED' }}
         run: |
           cd "$CONFIG"
           echo "Apply enhanced susfs4ksu patch"
-          cp ../$SUPER_DIR/51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common
+          cp ../$SUPER_DIR/51_enhanced_susfs-android15-6.6.patch ./common
           cd common
-          patch -p1 --fuzz=3 < 51_enhanced_susfs-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
+          patch -p1 --fuzz=3 < 51_enhanced_susfs-android15-6.6.patch || true
           cd ..
 
           echo "Enable extra features in KSU"
@@ -609,7 +609,7 @@ jobs:
       - name: some fixes
         run: |
           cd "$CONFIG/common"
-          FORMATTED_BRANCH="${{ inputs.android_version }}-${{ inputs.kernel_version }}"
+          FORMATTED_BRANCH="android15-6.6"
           # Fake Patch to fix failures
           fake_patched=0
           if [ "$FORMATTED_BRANCH" = "android15-6.6" ]; then
@@ -652,12 +652,12 @@ jobs:
         run: |
           if [ "$SUPER_DIR" == "UNSUPPORTED" ]; then
             echo "Be cautioned! You're applying ZeroMount VFS patch on an unsupported ksu variant. Stuff may fail!"
-            cp ./SuperBuilders/${{ inputs.android_version }}-${{ inputs.kernel_version }}/WildKSU/patches/60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
+            cp ./SuperBuilders/android15-6.6/WildKSU/patches/60_zeromount-android15-6.6.patch ./$CONFIG/common
           else
-            cp ./$SUPER_DIR/60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./$CONFIG/common
+            cp ./$SUPER_DIR/60_zeromount-android15-6.6.patch ./$CONFIG/common
           fi
           cd "$CONFIG/common"
-          patch -p1 --fuzz=3 < 60_zeromount-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch
+          patch -p1 --fuzz=3 < 60_zeromount-android15-6.6.patch
       - name: Add SUSFS & KSU into defconfig - Legacy Build.sh
         if: ${{ !inputs.use_bazel }}
         run: |
