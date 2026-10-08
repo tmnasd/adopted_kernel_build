@@ -27,7 +27,7 @@ on:
           - Official
           - Next
           - KowSU
-          - ReSukiSU
+          - BakaSU
           - SukiSU
           - xxKSU
         default: KowSU
@@ -345,9 +345,9 @@ jobs:
           SOURCE_REV="$(git -C "$CONFIG/common" rev-parse HEAD)"
           printf '%s\n' \
             "$SOURCE_REV" \
-            "${{ inputs.android_version }}" \
-            "${{ inputs.kernel_version }}" \
-            "${{ inputs.bazel_target }}" > bazel_cache_key.txt
+            "android15" \
+            "6.6" \
+            "${{ inputs.bazel_dist }}" > bazel_cache_key.txt
           echo "BAZEL_DISK_CACHE_DIR=$HOME/.cache/kleaf-bazel" >> "$GITHUB_ENV"
       
       - name: Determine the branch of KernelSU
@@ -359,7 +359,7 @@ jobs:
           case "$branch_input" in
             "Stable")
               case "$variant_input" in
-                "Official" | "ReSukiSU") echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "Official" | "BakaSU")   echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 "Next")                  echo "BRANCH=-s dev-susfs" >> $GITHUB_ENV ;;
                 "SukiSU")                echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
                 "KowSU")                 echo "BRANCH=-s master" >> $GITHUB_ENV ;;
@@ -374,7 +374,7 @@ jobs:
               case "$variant_input" in
                 "SukiSU")                         echo "BRANCH=-s builtin" >> $GITHUB_ENV ;;
                 "Next")                           echo "BRANCH=-s dev-susfs" >> $GITHUB_ENV  ;;
-                "Official" | "ReSukiSU")          echo "BRANCH=-s main" >> $GITHUB_ENV ;;
+                "Official" | "BakaSU")            echo "BRANCH=-s main" >> $GITHUB_ENV ;;
                 "KowSU")                          echo "BRANCH=-s master" >> $GITHUB_ENV ;;
                 "xxKSU")                          echo "BRANCH=-s master" >> $GITHUB_ENV ;;
                 *) 
@@ -413,7 +413,8 @@ jobs:
             
           elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             echo "Adding ReSukiSU..."
-            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
+            curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/refs/heads/main/kernel/setup.sh" | bash $BRANCH
+            patch -p1 -d KernelSU < <(curl -sSfL "https://github.com/midori01/KernelSU/commit/resuki~1.patch")
           elif [ "${{ inputs.kernelsu_variant }}" == "KowSU" ]; then
             echo "Adding KowSU..."
             curl -LSs "https://raw.githubusercontent.com/KOWX712/KernelSU/refs/heads/master/kernel/setup.sh" | bash $BRANCH
