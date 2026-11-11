@@ -127,7 +127,7 @@ jobs:
     steps:
       - name: Maximize Build Space
         if: ${{ inputs.max_build_space }}
-        uses: AdityaGarg8/remove-unwanted-software@v5
+        uses: AdityaGarg8/remove-unwanted-software@v5.1
         with:
           remove-dotnet: 'true'          # Frees ~2 GB
           remove-android: 'true'         # Frees ~9 GB
