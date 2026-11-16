@@ -120,9 +120,24 @@ on:
         required: false
         type: string
         default: ""
+      prepare_only:
+        description: "Apply patches and validate configuration/target without compiling or packaging"
+        type: boolean
+        default: false
+      draft_release:
+        description: "Publish successful build artifacts to a draft GitHub release"
+        type: boolean
+        default: false
 jobs:
   build-kernel-kernelsu-susfs:
     runs-on: ubuntu-24.04
+    env:
+      PREPARE_ONLY: ${{ inputs.prepare_only }}
+      BUILD_WITH_BAZEL: ${{ inputs.use_bazel }}
+      EXPECT_KSU: ${{ inputs.kernelsu_variant != 'None' }}
+      EXPECT_SUSFS: ${{ inputs.use_susfs && inputs.kernelsu_variant != 'None' }}
+      EXPECT_BBG: ${{ inputs.BBG }}
+      BUILD_INPUTS: ${{ toJSON(inputs) }}
 
     steps:
       - name: Maximize Build Space
@@ -146,6 +161,21 @@ jobs:
           swap-size-gb: 25
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Validate inputs
+        env:
+          DEFCONFIG_INPUT: ${{ inputs.defconfig_name }}
+          SOURCE_INPUT: ${{ inputs.custom_kernel_source }}
+          TARGET_INPUT: ${{ inputs.bazel_dist }}
+          CLANG_INPUT: ${{ inputs.clang_custom_link }}
+        run: |
+          mkdir -p artifacts
+          [[ "$DEFCONFIG_INPUT" =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo '::error::Invalid defconfig name'; exit 1; }
+          [[ -n "$SOURCE_INPUT" ]] || { echo '::error::Kernel source is required'; exit 1; }
+          if [[ "$BUILD_WITH_BAZEL" == true ]]; then
+            [[ "$TARGET_INPUT" =~ ^//[^[:space:]]+:[^[:space:]]+$ ]] || { echo '::error::Expected a Bazel //package:target'; exit 1; }
+          else
+            [[ -n "$CLANG_INPUT" ]] || { echo '::error::Make builds require a Clang URL'; exit 1; }
+          fi
       - name: Set the CONFIG environment variable
         run: |
           
@@ -158,14 +188,14 @@ jobs:
           echo "CONFIG set to: $CONFIG"
           mkdir -p "$CONFIG"
 
-          BUILD_LABEL="${{ format('{0}{1}{2}', inputs.kernelsu_variant, inputs.use_susfs && '-susfs' || '' , inputs.nomount_support && '-nomount' || '') }}"
+          BUILD_LABEL="${{ format('{0}{1}', inputs.kernelsu_variant, inputs.use_susfs && inputs.kernelsu_variant != 'None' && '-susfs' || '') }}"
           echo "BUILD_LABEL=$BUILD_LABEL" >> $GITHUB_ENV
           echo "Build label set to: $BUILD_LABEL"
 
           echo "DEFCONFIG=${{ inputs.defconfig_name }}" >> $GITHUB_ENV
           echo "Defconfig set to: $DEFCONFIG"
           
-          echo "KERNEL_VERSION=${{ inputs.kernel_version }}" >> $GITHUB_ENV
+          echo "KERNEL_VERSION=6.6" >> $GITHUB_ENV
           echo "BUILD_WITH_BAZEL=${{ inputs.use_bazel }}" >> $GITHUB_ENV
           echo "BAZEL_TARGET=${{ inputs.bazel_dist }}" >> $GITHUB_ENV
           echo "BAZEL_ARGS=${{ inputs.bazel_args }}" >> $GITHUB_ENV
@@ -337,7 +367,10 @@ jobs:
       - name: Add build script
         run: |
           echo "Adding build script..."
-          mv build_kernel.sh $CONFIG/common
+          cp build_kernel.sh "$CONFIG/common/"
+          test -f "$CONFIG/common/arch/arm64/configs/$DEFCONFIG"
+          cp "$CONFIG/common/arch/arm64/configs/$DEFCONFIG" artifacts/defconfig.original
+          git -C "$CONFIG/common" rev-parse HEAD > artifacts/kernel-source-revision.txt
       - name: Prepare Bazel disk cache key
         if: ${{ inputs.use_bazel && inputs.use_ccache }}
         run: |
@@ -506,6 +539,7 @@ jobs:
       - name: Apply EVONIX's bypass charging patches
         if: ${{ inputs.bypass_charge_evonix }}
         run: |
+          cd "$CONFIG/common"
           patch -p1 --fuzz=3 < <(curl -sSfL "https://github.com/tmnasd/Xiaomi_Rodin_Kernel_Enhance/commit/7154f9d04c3d47d20c70b9228b172b75c1db65e8.patch")
           patch -p1 --fuzz=3 < <(curl -sSfL "https://github.com/tmnasd/Xiaomi_Rodin_Kernel_Enhance/commit/d0af17938287f146412cda59c9bb634493b3837b.patch")
           patch -p1 --fuzz=3 < <(curl -sSfL "https://github.com/tmnasd/Xiaomi_Rodin_Kernel_Enhance/commit/ce47702884a128bd4d1643436bfe613259e68f23.patch")
@@ -686,7 +720,10 @@ jobs:
             fi
           fi
 
-      - name: Build with retry
+      - name: Record prepared sources
+        run: python3 .github/scripts/build_report.py snapshot
+
+      - name: Build or validate with retry
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 180
@@ -697,9 +734,11 @@ jobs:
             set -x
             cd "$CONFIG/common"
             chmod +x ./build_kernel.sh
-            ./build_kernel.sh "$DEFCONFIG" "$BUILD_LABEL" "${{ inputs.use_ccache }}"
+            set -o pipefail
+            ./build_kernel.sh "$DEFCONFIG" "$BUILD_LABEL" "${{ inputs.use_ccache }}" 2>&1 | tee -a "$ARTIFACT_DIR/build.log"
             
       - name: Package AnyKernel3
+        if: ${{ !inputs.prepare_only }}
         run: |
           set -euo pipefail
 
@@ -719,7 +758,7 @@ jobs:
           TIME="$(date '+%Y%m%d-%H%M%S')"
           echo "TIME=$TIME" >> "$GITHUB_ENV"
 
-          ZIP_NAME="Rodin-${{ inputs.kernel_version }}-${BUILD_LABEL}-${TIME}-AnyKernel3.zip"
+          ZIP_NAME="Rodin-${KERNEL_VERSION}-${BUILD_LABEL}-${TIME}-AnyKernel3.zip"
           mkdir -p "$ARTIFACT_DIR"
 
           (
@@ -730,11 +769,29 @@ jobs:
           test -s "$ARTIFACT_DIR/$ZIP_NAME"
           echo "AK3 artifact: $ARTIFACT_DIR/$ZIP_NAME"
 
-      - name: Upload artifacts
+      - name: Collect diagnostics and checksums
+        if: ${{ always() }}
+        env:
+          BUILD_RESULT: ${{ job.status }}
+        run: python3 .github/scripts/build_report.py finalize
+
+      - name: Upload artifacts and diagnostics
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: rodin-out-${{ inputs.kernelsu_variant }}_kernel-${{ env.CONFIG }}-${{ env.TIME }}
+          name: rodin-out-${{ inputs.kernelsu_variant }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: | 
-            ${{ github.workspace }}/artifacts/*.zip
+            ${{ github.workspace }}/artifacts/
+          include-hidden-files: true
           if-no-files-found: error
+
+      - name: Create draft release
+        if: ${{ success() && inputs.draft_release && !inputs.prepare_only }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --draft --title "Rodin 6.6 ${BUILD_LABEL}" \
+            --notes-file "$ARTIFACT_DIR/release-notes.md" \
+            "$ARTIFACT_DIR/"*.zip "$ARTIFACT_DIR/manifest.json" "$ARTIFACT_DIR/SHA256SUMS"
 

@@ -23,6 +23,31 @@ BAZEL_ARGS="${BAZEL_ARGS:-}"
 BAZEL_DISK_CACHE_DIR="${BAZEL_DISK_CACHE_DIR:-}"
 DIST_DIR="${DIST_DIR:-$MAIN/dist}"
 KERNEL_VERSION="${KERNEL_VERSION:-6.6}"
+PREPARE_ONLY="${PREPARE_ONLY:-false}"
+
+verify_config() {
+    local config="$1"
+    if [ ! -f "$config" ]; then
+        echo "ERROR: Generated config not found: $config" >&2
+        return 1
+    fi
+    local feature expected
+    for feature in KSU SUSFS BBG; do
+        case "$feature" in
+            KSU) expected="${EXPECT_KSU:-false}" ;;
+            SUSFS) expected="${EXPECT_SUSFS:-false}"; feature=KSU_SUSFS ;;
+            BBG) expected="${EXPECT_BBG:-false}" ;;
+        esac
+        if [ "$expected" = true ] && ! grep -qx "CONFIG_${feature}=y" "$config"; then
+            echo "ERROR: Requested CONFIG_${feature}=y missing from $config" >&2
+            return 1
+        fi
+    done
+    if [ "${EXPECT_BBG:-false}" = true ] && ! grep -qE '^CONFIG_LSM="([^",]+,)*baseband_guard(,[^",]+)*"$' "$config"; then
+        echo "ERROR: baseband_guard missing from CONFIG_LSM" >&2
+        return 1
+    fi
+}
 
 write_image_env() {
     local image="$1"
@@ -56,9 +81,6 @@ build_with_kleaf() {
         exit 1
     fi
 
-    rm -rf "$DIST_DIR"
-    mkdir -p "$DIST_DIR"
-
     local -a bazel_cmd
     bazel_cmd=("./tools/bazel" run)
 
@@ -78,10 +100,25 @@ build_with_kleaf() {
 
     bazel_cmd+=("$BAZEL_TARGET" -- "--destdir=$DIST_DIR")
 
+    verify_config "$KERNEL_DIR/arch/arm64/configs/$KERNEL_DEFCONFIG"
+    if [ "$PREPARE_ONLY" = true ]; then
+        # Query checks the label; analysis validates dependencies without compiling.
+        ./tools/bazel query "$BAZEL_TARGET"
+        local -a analysis_cmd=("${bazel_cmd[@]:0:${#bazel_cmd[@]}-3}")
+        analysis_cmd[1]=build
+        "${analysis_cmd[@]}" --nobuild "$BAZEL_TARGET"
+        return
+    fi
+
+    rm -rf "$DIST_DIR"
+    mkdir -p "$DIST_DIR"
+
     printf 'Running:'
     printf ' %q' "${bazel_cmd[@]}"
     printf '\n'
     "${bazel_cmd[@]}"
+
+    verify_config "$DIST_DIR/.config"
 
     local image
     if ! image="$(find_kernel_image "$DIST_DIR")"; then
@@ -167,6 +204,10 @@ build_with_make() {
     echo "**** Defconfig: $KERNEL_DEFCONFIG ****"
 
     make O="$OUT_DIR" "$KERNEL_DEFCONFIG" "${make_opts[@]}"
+    verify_config "$OUT_DIR/.config"
+    if [ "$PREPARE_ONLY" = true ]; then
+        return
+    fi
     make -j"$(nproc --all)" O="$OUT_DIR" "${make_opts[@]}"
 
     [ -d "$KERNEL_DIR/.git" ] && git restore "$yyll1" "$yyll2" 2>/dev/null || true
@@ -187,6 +228,9 @@ fi
 
 BUILD_END="$(date +%s)"
 DIFF=$((BUILD_END - BUILD_START))
-echo -e "\nBuild completed in $((DIFF / 60))m $((DIFF % 60))s"
+if [ -n "${GITHUB_ENV:-}" ]; then
+    echo "BUILD_DURATION_SECONDS=$DIFF" >> "$GITHUB_ENV"
+fi
+echo -e "\nBuild/validation completed in $((DIFF / 60))m $((DIFF % 60))s"
 echo "Build label: $BUILD_LABEL"
 echo "Kernel version: $KERNEL_VERSION"
